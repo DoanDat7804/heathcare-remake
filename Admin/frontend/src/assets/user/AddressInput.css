@@ -1,0 +1,41 @@
+.address-section {
+    margin: 15px 0;
+  }
+  
+  .address-section h4 {
+    font-size: 16px;
+    margin-bottom: 10px;
+    color: #333;
+  }
+  
+  .address-section input {
+    display: block;
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  
+  .address-section button {
+    background-color: #28a745;
+    color: white;
+    padding: 8px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .address-section button:hover {
+    background-color: #218838;
+  }
+  
+  .address-section ul {
+    list-style-type: none;
+    padding: 0;
+  }
+  
+  .address-section li {
+    margin-top: 10px;
+    color: #555;
+  }

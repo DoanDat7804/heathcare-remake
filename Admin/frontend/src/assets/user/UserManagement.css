@@ -1,0 +1,67 @@
+/* 🔹 Cấu hình chung cho UserManagement */
+.user-management {
+    width: 90%;
+    margin: 80px auto 20px;
+    text-align: center;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* 🔹 Thông báo lỗi */
+  .error-message {
+    color: #dc3545;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  
+  /* 🔹 Header container */
+  .user-header-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 20px;
+  }
+  
+  /* 🔹 Nút thêm người dùng */
+  .button-container {
+    text-align: left;
+    margin-bottom: 20px;
+    margin-left: 20px;
+  }
+  
+  .add-user-btn {
+    background-color: #28a745;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  
+  .add-user-btn:hover {
+    background-color: #218838;
+  }
+  
+  /* 🔹 Ô tìm kiếm */
+  .search-container {
+    text-align: left;
+    width: 100%;
+    margin-left: 20px;
+  }
+  
+  .search-input {
+    width: 100%;
+    max-width: 400px;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-sizing: border-box;
+  }

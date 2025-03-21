@@ -1,0 +1,18 @@
+.avatar-section {
+    margin: 15px 0;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+  }
+  
+  .avatar-section h4 {
+    color: #002147;
+    margin-bottom: 10px;
+  }
+  
+  .image-preview {
+    max-width: 100%;
+    height: auto;
+    margin-top: 10px;
+    border-radius: 5px;
+  }

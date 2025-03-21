@@ -1,0 +1,52 @@
+.working-hours-section {
+    margin: 15px 0;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+  }
+  
+  .working-hours-section h4 {
+    color: #002147;
+    margin-bottom: 10px;
+  }
+  
+  .working-hours-section input,
+  .working-hours-section select {
+    width: calc(33% - 10px);
+    display: inline-block;
+    margin-right: 10px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-sizing: border-box;
+  }
+  
+  .working-hours-section label {
+    display: inline-block;
+    margin: 8px 10px 8px 0;
+  }
+  
+  .working-hours-section button {
+    background-color: #28a745;
+    color: white;
+    padding: 8px 12px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  
+  .working-hours-section button:hover {
+    background-color: #218838;
+  }
+  
+  .working-hours-section ul {
+    list-style: none;
+    padding: 0;
+    margin-top: 10px;
+  }
+  
+  .working-hours-section ul li {
+    padding: 5px 0;
+    border-bottom: 1px solid #eee;
+  }

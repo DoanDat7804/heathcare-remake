@@ -1,0 +1,139 @@
+/* 🔹 Container cho bảng người dùng */
+.user-table-container {
+    margin-top: 20px;
+    overflow-x: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* 🔹 Tiêu đề */
+  .user-table-container h2 {
+    color: #002147;
+    font-size: 26px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  
+  /* 🔹 Bảng người dùng */
+  .user-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background-color: #fff;
+    min-width: 1200px;
+  }
+  
+  /* 🔹 Header và ô dữ liệu */
+  .user-table th,
+  .user-table td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: left;
+    white-space: nowrap;
+  }
+  
+  .user-table th:first-child {
+    border-top-left-radius: 8px;
+  }
+  
+  .user-table th:last-child {
+    border-top-right-radius: 8px;
+  }
+  
+  .user-table tr:last-child td:first-child {
+    border-bottom-left-radius: 8px;
+  }
+  
+  .user-table tr:last-child td:last-child {
+    border-bottom-right-radius: 8px;
+  }
+  
+  /* 🔹 Header bảng */
+  .user-table th {
+    background-color: #002147;
+    color: white;
+    font-weight: bold;
+  }
+  
+  /* 🔹 Ô dữ liệu */
+  .user-table td {
+    vertical-align: middle;
+  }
+  
+  /* 🔹 Hình ảnh người dùng */
+  .user-avatar {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 1px solid #ddd;
+    vertical-align: middle;
+  }
+  
+  /* 🔹 Nút hành động */
+  .edit-btn {
+    background-color: #ffc107;
+    color: white;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-right: 5px;
+  }
+  
+  .edit-btn:hover {
+    background-color: #e0a800;
+  }
+  
+  .delete-btn {
+    background-color: #dc3545;
+    color: white;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .delete-btn:hover {
+    background-color: #b02a37;
+  }
+  
+  /* 🔹 Hiệu ứng hover */
+  .user-table tr:hover {
+    background-color: #f2f2f2;
+  }
+  
+  /* 🔹 Khi không có dữ liệu */
+  .user-table td[colspan="15"] {
+    text-align: center;
+    padding: 20px;
+    color: #777;
+    font-style: italic;
+  }
+  
+  /* 🔹 Phân trang */
+  .pagination {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+  }
+  
+  .pagination button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    margin: 0 5px;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  
+  .pagination button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+  }
+  
+  .pagination button:hover:not(:disabled) {
+    background-color: #0056b3;
+  }
+  

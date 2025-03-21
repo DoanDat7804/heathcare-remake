@@ -1,0 +1,274 @@
+/* 🔹 Cấu hình chung */
+.admin-management {
+    width: 90%;
+    margin: 20px auto;
+    text-align: center;
+    padding: 20px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  
+  h2 {
+    color: #002147;
+    font-size: 26px;
+    margin-bottom: 20px;
+  }
+  
+  /* 🔹 Nút thêm quản trị viên */
+  .button-container {
+    text-align: left;
+    margin-bottom: 20px;
+    margin-left: 20px;
+  }
+  
+  .add-admin-btn {
+    background-color: #28a745;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+  }
+  
+  .add-admin-btn:hover {
+    background-color: #218838;
+  }
+  
+  /* 🔹 Ô tìm kiếm */
+  .search-container {
+    margin-bottom: 20px;
+    text-align: left;
+    margin-left: 20px;
+  }
+  
+  .search-input {
+    width: 300px;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-sizing: border-box;
+  }
+  
+  /* 🔹 Modal thêm quản trị viên */
+  .modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 20px 0;
+    overflow-y: auto;
+    z-index: 1000;
+  }
+  
+  .modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    width: 50%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+  
+  .modal-content h3 {
+    color: #002147;
+    text-align: center;
+    margin-bottom: 15px;
+  }
+  
+  /* 🔹 Input và Select */
+  .modal-content input,
+  .modal-content select,
+  .modal-content textarea {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-sizing: border-box;
+  }
+  
+  /* 🔹 Nút "Lưu" và "Hủy" */
+  .button-group {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 15px;
+  }
+  
+  .save-admin-btn {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .save-admin-btn:hover {
+    background-color: #0056b3;
+  }
+  
+  .close-modal-btn {
+    background-color: #dc3545;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .close-modal-btn:hover {
+    background-color: #b02a37;
+  }
+  
+  /* 🔹 Avatar Section */
+  .avatar-section {
+    margin: 15px 0;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+  }
+  
+  .avatar-section h4 {
+    color: #002147;
+    margin-bottom: 10px;
+  }
+  
+  .image-preview {
+    max-width: 100%;
+    height: auto;
+    margin-top: 10px;
+    border-radius: 5px;
+  }
+  
+  /* 🔹 Bảng danh sách quản trị viên */
+  .admin-table-container {
+    margin-top: 20px;
+    overflow-x: auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+  
+  .admin-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background-color: #fff;
+    min-width: 1200px;
+  }
+  
+  /* Định dạng viền và bo góc cho bảng */
+  .admin-table th,
+  .admin-table td {
+    border: 1px solid #ddd;
+    padding: 12px;
+    text-align: left;
+    white-space: nowrap;
+  }
+  
+  /* Bo góc cho các ô đầu tiên và cuối cùng */
+  .admin-table th:first-child {
+    border-top-left-radius: 8px;
+  }
+  
+  .admin-table th:last-child {
+    border-top-right-radius: 8px;
+  }
+  
+  .admin-table tr:last-child td:first-child {
+    border-bottom-left-radius: 8px;
+  }
+  
+  .admin-table tr:last-child td:last-child {
+    border-bottom-right-radius: 8px;
+  }
+  
+  /* Định dạng header */
+  .admin-table th {
+    background-color: #002147;
+    color: white;
+    font-weight: bold;
+  }
+  
+  .admin-table td {
+    vertical-align: middle;
+  }
+  
+  /* Định dạng hình ảnh quản trị viên trong bảng */
+  .admin-avatar {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 1px solid #ddd;
+    vertical-align: middle;
+  }
+  
+  /* Định dạng nút hành động */
+  .edit-btn {
+    background-color: #ffc107;
+    color: white;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-right: 5px;
+  }
+  
+  .edit-btn:hover {
+    background-color: #e0a800;
+  }
+  
+  .delete-btn {
+    background-color: #dc3545;
+    color: white;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .delete-btn:hover {
+    background-color: #b02a37;
+  }
+  
+  /* Hiệu ứng hover cho hàng */
+  .admin-table tr:hover {
+    background-color: #f2f2f2;
+  }
+  
+  /* 🔹 Phân trang */
+  .pagination {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+  
+  .pagination button {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    background-color: #fff;
+    color: #002147;
+    cursor: pointer;
+    border-radius: 5px;
+    font-size: 14px;
+  }
+  
+  .pagination button.active {
+    background-color: #002147;
+    color: white;
+    border-color: #002147;
+  }
+  
+  .pagination button:hover:not(.active) {
+    background-color: #e0e0e0;
+  }
