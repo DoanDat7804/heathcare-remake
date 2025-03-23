@@ -1,25 +1,41 @@
-
 import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { LogIn, Mail, Lock, Shield } from "lucide-react";
-import { Link } from "react-router-dom";
 import { toast } from "sonner";
-//Admin
+import { authApi } from "../apis/authApi";
+
 const AdminLogin = () => {
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
-    
-    // Giả lập đăng nhập thành công
-    setTimeout(() => {
-      setLoading(false);
+
+    // Lấy giá trị của email và mật khẩu từ form
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    try {
+      // Gọi API đăng nhập admin
+      const response = await authApi.adminLogin(email, password);
+      
+      // Xử lý thành công (có thể lấy thêm dữ liệu từ response nếu cần)
       toast.success("Đăng nhập thành công! Chuyển hướng đến trang quản trị...");
-    }, 1500);
+      
+      // Chuyển hướng tới trang dashboard (hoặc trang quản trị tương ứng)
+      navigate("/admin/Dashboard");
+    } catch (error: any) {
+      // Xử lý lỗi khi đăng nhập thất bại
+      toast.error(error.response?.data?.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -54,6 +70,7 @@ const AdminLogin = () => {
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 h-4 w-4" />
                   <Input 
                     id="email" 
+                    name="email"
                     type="email" 
                     placeholder="admin@healthcare.com" 
                     className="pl-10 bg-gray-700 border-gray-600 text-white placeholder-gray-400" 
@@ -72,6 +89,7 @@ const AdminLogin = () => {
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 h-4 w-4" />
                   <Input 
                     id="password" 
+                    name="password"
                     type="password" 
                     placeholder="••••••••" 
                     className="pl-10 bg-gray-700 border-gray-600 text-white placeholder-gray-400" 

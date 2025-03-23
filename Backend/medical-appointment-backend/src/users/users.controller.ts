@@ -4,11 +4,11 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { RoleGuard } from '../shared/guards/role.guard';
+import { RolesGuard } from '../shared/guards/role.guard';
 import { Roles } from '../shared/decorators/roles.decorator';
 
 @Controller('users')
-@UseGuards(AuthGuard('jwt'), RoleGuard)
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 

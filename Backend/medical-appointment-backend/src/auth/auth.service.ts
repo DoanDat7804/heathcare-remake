@@ -1,4 +1,3 @@
-// src/auth/auth.service.ts
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -15,19 +14,23 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
+  // Hàm xác thực chung cho cả User và Doctor
   async validateUser(email: string, password: string): Promise<any> {
     let user = await this.userModel.findOne({ email });
     if (!user) {
       user = await this.doctorModel.findOne({ email });
     }
-    console.log(user)
-    if (user && await bcrypt.compare(password, user.password)) {
-      const { password, ...result } = user.toObject();
-      return result;
+    if (!user) {
+      throw new UnauthorizedException('Email không tồn tại');
     }
-    throw new UnauthorizedException('Email hoặc mật khẩu không đúng');
+    if (!(await bcrypt.compare(password, user.password))) {
+      throw new UnauthorizedException('Mật khẩu không đúng');
+    }
+    const { password: pwd, ...result } = user.toObject();
+    return result;
   }
 
+  // Đăng nhập chung (dành cho tất cả vai trò)
   async login(email: string, password: string) {
     const user = await this.validateUser(email, password);
     const payload = { email: user.email, sub: user._id, role: user.role };
@@ -36,9 +39,26 @@ export class AuthService {
     };
   }
 
+  // Đăng nhập riêng cho admin
+  async adminLogin(email: string, password: string) {
+    const user = await this.validateUser(email, password);
+    if (user.role !== 'admin') {
+      throw new UnauthorizedException('Chỉ admin mới có thể đăng nhập bằng cách này');
+    }
+    const payload = { email: user.email, sub: user._id, role: user.role };
+    return {
+      access_token: this.jwtService.sign(payload),
+    };
+  }
+
+  // Đăng ký user (mặc định role là patient)
   async register(userDto: any) {
     const hashedPassword = await bcrypt.hash(userDto.password, 10);
-    const newUser = new this.userModel({ ...userDto, password: hashedPassword });
+    const newUser = new this.userModel({
+      ...userDto,
+      password: hashedPassword,
+      role: userDto.role || 'patient', // Mặc định là patient nếu không chỉ định
+    });
     return newUser.save();
   }
 }

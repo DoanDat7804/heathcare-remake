@@ -1,6 +1,6 @@
 const bcrypt = require('bcrypt');
 
-const password = 'password123'; // Mật khẩu thô bạn muốn mã hóa
+const password = 'admin123'; // Mật khẩu thô bạn muốn mã hóa
 const saltRounds = 10;
 
 bcrypt.hash(password, saltRounds, (err, hash) => {

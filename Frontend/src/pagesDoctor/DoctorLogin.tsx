@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,24 +6,27 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { LogIn, Mail, Lock, UserCog } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { useAuth } from "@/hooks/useAuth";
-// giao diện đăng nhập dành cho bác sĩ trong hệ thống quản lý y tế.
+import { authApi } from "../apis/authApi";
+
 const DoctorLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { login, isLoading } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    
+    setIsLoading(true);
+
     try {
-      await login(email, password);
-      // Chuyển hướng đến trang dashboard sau khi đăng nhập
+      const response = await authApi.login(email, password);
+      localStorage.setItem("token", response.data.token);
+      toast.success("Đăng nhập thành công!");
       navigate("/doctor/dashboard");
     } catch (error) {
-      // Lỗi đã được xử lý trong hook useAuth
-      console.error("Login failed:", error);
+      toast.error(error.response?.data?.message || "Đăng nhập thất bại!");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -92,20 +94,7 @@ const DoctorLogin = () => {
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
               <Button type="submit" className="w-full bg-hospital-500 hover:bg-hospital-600" disabled={isLoading}>
-                {isLoading ? (
-                  <div className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Đang xử lý...
-                  </div>
-                ) : (
-                  <>
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Đăng nhập
-                  </>
-                )}
+                {isLoading ? "Đang xử lý..." : (<> <LogIn className="mr-2 h-4 w-4" /> Đăng nhập </>)}
               </Button>
               <div className="text-sm text-center text-gray-500">
                 <p>Nếu bạn gặp vấn đề khi đăng nhập, vui lòng liên hệ</p>

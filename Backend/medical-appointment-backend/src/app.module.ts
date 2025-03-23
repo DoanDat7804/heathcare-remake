@@ -11,6 +11,7 @@ import { NewsModule } from './news/news.module';
 import { ServicesModule } from './services/services.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { FilesModule } from './files/files.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { FilesModule } from './files/files.module';
     ServicesModule,
     NotificationsModule,
     FilesModule,
+    AdminModule,
   ],
 })
 export class AppModule {}
