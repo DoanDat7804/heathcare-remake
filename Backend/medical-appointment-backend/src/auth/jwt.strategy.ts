@@ -9,7 +9,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: '2f390ce18fb46fb3b6338535eca988d1552704abd629113c85e03fee9dae4859', // Thay bằng biến môi trường
+      secretOrKey: '4f8e5b6d9c7a12e3f4b89d5a6c7e8f9a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e', // Thay bằng biến môi trường
     });
   }
 

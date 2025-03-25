@@ -3,12 +3,14 @@ import { AdminService } from './admin.service';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../shared/guards/role.guard';
 import { Roles } from '../shared/decorators/roles.decorator';
+import { UserResponseDto } from '../users/dto/user-response.dto';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { UpdateUserDto } from '../users/dto/update-user.dto';
 import { CreateDoctorDto } from '../doctors/dto/create-doctor.dto';
 import { UpdateDoctorDto } from '../doctors/dto/update-doctor.dto';
 import { CreateNewsDto } from '../news/dto/create-news.dto';
 import { UpdateNewsDto } from '../news/dto/update-news.dto';
+import { UpdateAppointmentDto } from '../appointments/dto/update-appointment.dto';
 
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -77,5 +79,23 @@ export class AdminController {
   @Delete('news/:id')
   deleteNews(@Param('id') id: string) {
     return this.adminService.deleteNews(id);
+  }
+
+  // Lấy tất cả lịch hẹn
+  @Get('appointments')
+  getAllAppointments() {
+    return this.adminService.getAllAppointments();
+  }
+
+  // Cập nhật lịch hẹn
+  @Patch('appointments/:id')
+  updateAppointment(@Param('id') id: string, @Body() updateAppointmentDto: UpdateAppointmentDto) {
+    return this.adminService.updateAppointment(id, updateAppointmentDto);
+  }
+
+  // Xóa lịch hẹn
+  @Delete('appointments/:id')
+  deleteAppointment(@Param('id') id: string) {
+    return this.adminService.deleteAppointment(id);
   }
 }

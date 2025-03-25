@@ -1,7 +1,23 @@
+import { IsString, IsNotEmpty, IsDateString } from 'class-validator';
+
 export class CreateAppointmentDto {
-    patientId: string;
-    doctorId: string;
-    serviceType: string;
-    date: Date;
-    timeSlot: string;
-  }
+  @IsString()
+  @IsNotEmpty()
+  patientId: string;
+
+  @IsString()
+  @IsNotEmpty()
+  doctorId: string;
+
+  @IsString()
+  @IsNotEmpty()
+  serviceType: string;
+
+  @IsDateString()
+  @IsNotEmpty()
+  date: string; // Đổi từ Date sang string
+
+  @IsString()
+  @IsNotEmpty()
+  timeSlot: string;
+}

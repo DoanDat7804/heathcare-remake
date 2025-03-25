@@ -17,5 +17,6 @@ import { DoctorSchema } from '../doctors/schemas/doctor.schema';
   ],
   providers: [AppointmentsService],
   controllers: [AppointmentsController],
+  exports: [AppointmentsService],
 })
 export class AppointmentsModule {}

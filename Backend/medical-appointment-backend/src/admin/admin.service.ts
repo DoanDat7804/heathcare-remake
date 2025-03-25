@@ -1,13 +1,16 @@
+// src/admin/admin.service.ts
 import { Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { DoctorsService } from '../doctors/doctors.service';
 import { NewsService } from '../news/news.service';
+import { AppointmentsService } from '../appointments/appointments.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { UpdateUserDto } from '../users/dto/update-user.dto';
 import { CreateDoctorDto } from '../doctors/dto/create-doctor.dto';
 import { UpdateDoctorDto } from '../doctors/dto/update-doctor.dto';
 import { CreateNewsDto } from '../news/dto/create-news.dto';
 import { UpdateNewsDto } from '../news/dto/update-news.dto';
+import { UpdateAppointmentDto } from '../appointments/dto/update-appointment.dto'; // DTO để cập nhật lịch hẹn
 
 @Injectable()
 export class AdminService {
@@ -15,6 +18,7 @@ export class AdminService {
     private readonly usersService: UsersService,
     private readonly doctorsService: DoctorsService,
     private readonly newsService: NewsService,
+    private readonly appointmentsService: AppointmentsService
   ) {}
 
   // Quản lý Users
@@ -66,5 +70,20 @@ export class AdminService {
 
   async deleteNews(id: string) {
     return this.newsService.remove(id);
+  }
+
+  // Lấy tất cả lịch hẹn
+  async getAllAppointments() {
+    return this.appointmentsService.findAll();
+  }
+
+  // Cập nhật lịch hẹn
+  async updateAppointment(id: string, updateAppointmentDto: UpdateAppointmentDto) {
+    return this.appointmentsService.update(id, updateAppointmentDto);
+  }
+
+  // Xóa lịch hẹn
+  async deleteAppointment(id: string) {
+    return this.appointmentsService.remove(id);
   }
 }

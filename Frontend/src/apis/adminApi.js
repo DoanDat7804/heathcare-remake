@@ -19,6 +19,8 @@ export const adminApi = {
   createNews: (newsData) => api.post('/admin/news', newsData),
   updateNews: (id, newsData) => api.patch(`/admin/news/${id}`, newsData),
   deleteNews: (id) => api.delete(`/admin/news/${id}`),
+
+  
 };
 
 export default adminApi;
