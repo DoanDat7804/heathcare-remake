@@ -1,4 +1,4 @@
-// src/schemas/user.schema.ts
+// src/users/schemas/user.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
@@ -16,6 +16,8 @@ export class User extends Document {
   @Prop({ required: true, unique: true })
   phone: string;
 
+  @Prop()
+  dateOfBirth: Date;
 
   @Prop({ enum: ['Nam', 'Nữ', 'Khác'] })
   gender: string;

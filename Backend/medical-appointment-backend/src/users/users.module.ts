@@ -4,13 +4,14 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
 import { UserSchema } from './schemas/user.schema';
+import { ParseObjectIdPipe } from '../common/pipes/parse-object-id.pipe';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: 'User', schema: UserSchema }]),
   ],
   controllers: [UsersController],
-  providers: [UsersService],
+  providers: [UsersService, ParseObjectIdPipe],
   exports: [UsersService, MongooseModule],
 })
 export class UsersModule {}

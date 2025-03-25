@@ -1,3 +1,4 @@
+// src/admin/admin.controller.ts
 import { Controller, Get, Post, Patch, Delete, Body, Param, UseGuards } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { AuthGuard } from '@nestjs/passport';
@@ -11,6 +12,7 @@ import { UpdateDoctorDto } from '../doctors/dto/update-doctor.dto';
 import { CreateNewsDto } from '../news/dto/create-news.dto';
 import { UpdateNewsDto } from '../news/dto/update-news.dto';
 import { UpdateAppointmentDto } from '../appointments/dto/update-appointment.dto';
+import { ParseObjectIdPipe } from '../common/pipes/parse-object-id.pipe';
 
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -20,82 +22,92 @@ export class AdminController {
 
   // Quản lý Users
   @Get('users')
-  getAllUsers() {
+  getAllUsers(): Promise<UserResponseDto[]> {
     return this.adminService.getAllUsers();
   }
 
   @Post('users')
-  createUser(@Body() createUserDto: CreateUserDto) {
+  createUser(@Body() createUserDto: CreateUserDto): Promise<UserResponseDto> {
     return this.adminService.createUser(createUserDto);
   }
 
   @Patch('users/:id')
-  updateUser(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+  updateUser(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() updateUserDto: UpdateUserDto,
+  ): Promise<UserResponseDto> {
     return this.adminService.updateUser(id, updateUserDto);
   }
 
   @Delete('users/:id')
-  deleteUser(@Param('id') id: string) {
+  deleteUser(@Param('id', ParseObjectIdPipe) id: string): Promise<void> {
     return this.adminService.deleteUser(id);
   }
 
   // Quản lý Doctors
   @Get('doctors')
-  getAllDoctors() {
+  getAllDoctors(): Promise<any[]> {
     return this.adminService.getAllDoctors();
   }
 
   @Post('doctors')
-  createDoctor(@Body() createDoctorDto: CreateDoctorDto) {
+  createDoctor(@Body() createDoctorDto: CreateDoctorDto): Promise<any> {
     return this.adminService.createDoctor(createDoctorDto);
   }
 
   @Patch('doctors/:id')
-  updateDoctor(@Param('id') id: string, @Body() updateDoctorDto: UpdateDoctorDto) {
+  updateDoctor(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() updateDoctorDto: UpdateDoctorDto,
+  ): Promise<any> {
     return this.adminService.updateDoctor(id, updateDoctorDto);
   }
 
   @Delete('doctors/:id')
-  deleteDoctor(@Param('id') id: string) {
+  deleteDoctor(@Param('id', ParseObjectIdPipe) id: string): Promise<void> {
     return this.adminService.deleteDoctor(id);
   }
 
   // Quản lý News
   @Get('news')
-  getAllNews() {
+  getAllNews(): Promise<any[]> {
     return this.adminService.getAllNews();
   }
 
   @Post('news')
-  createNews(@Body() createNewsDto: CreateNewsDto) {
+  createNews(@Body() createNewsDto: CreateNewsDto): Promise<any> {
     return this.adminService.createNews(createNewsDto);
   }
 
   @Patch('news/:id')
-  updateNews(@Param('id') id: string, @Body() updateNewsDto: UpdateNewsDto) {
+  updateNews(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() updateNewsDto: UpdateNewsDto,
+  ): Promise<any> {
     return this.adminService.updateNews(id, updateNewsDto);
   }
 
   @Delete('news/:id')
-  deleteNews(@Param('id') id: string) {
+  deleteNews(@Param('id', ParseObjectIdPipe) id: string): Promise<void> {
     return this.adminService.deleteNews(id);
   }
 
-  // Lấy tất cả lịch hẹn
+  // Quản lý Appointments
   @Get('appointments')
-  getAllAppointments() {
+  getAllAppointments(): Promise<any[]> {
     return this.adminService.getAllAppointments();
   }
 
-  // Cập nhật lịch hẹn
   @Patch('appointments/:id')
-  updateAppointment(@Param('id') id: string, @Body() updateAppointmentDto: UpdateAppointmentDto) {
+  updateAppointment(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() updateAppointmentDto: UpdateAppointmentDto,
+  ): Promise<any> {
     return this.adminService.updateAppointment(id, updateAppointmentDto);
   }
 
-  // Xóa lịch hẹn
   @Delete('appointments/:id')
-  deleteAppointment(@Param('id') id: string) {
+  deleteAppointment(@Param('id', ParseObjectIdPipe) id: string): Promise<void> {
     return this.adminService.deleteAppointment(id);
   }
 }

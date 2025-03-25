@@ -1,26 +1,29 @@
+// src/main.ts
 import { NestFactory } from '@nestjs/core';
-import { AuthGuard } from '@nestjs/passport';
 import { AppModule } from './app.module';
 import * as dotenv from 'dotenv';
 import { ValidationPipe } from '@nestjs/common';
+import { HttpExceptionFilter } from './filters/http-exception.filter';
 
 dotenv.config();
-declare const module: any;
-console.log('JWT_SECRET in main.ts:', process.env.JWT_SECRET);
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  if (module.hot) {
-    module.hot.accept();
-    module.hot.dispose(() => app.close());
+  if (process.env.NODE_ENV === 'development' && module['hot']) {
+    module['hot'].accept();
+    module['hot'].dispose(() => app.close());
   }
-  // app.useGlobalGuards(AuthGuard('jwt'));
   app.enableCors();
-  app.useGlobalPipes(new ValidationPipe({
-    transform: true, // Chuyển đổi kiểu dữ liệu tự động
-    whitelist: true, // Loại bỏ các trường không định nghĩa trong DTO
-    forbidNonWhitelisted: true, // Báo lỗi nếu có trường không mong muốn
-  }));
-  await app.listen(process.env.PORT || 3000);
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
+  app.useGlobalFilters(new HttpExceptionFilter());
+  const port = process.env.PORT || 3000;
+  await app.listen(port);
+  console.log(`Application is running on port ${port}`);
 }
 bootstrap();

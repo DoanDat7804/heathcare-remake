@@ -99,6 +99,7 @@
     "@types/d3-time": "^3.0.4",
     "@types/jest": "^29.5.14",
     "@types/mocha": "^10.0.10",
+    "@types/mongoose": "^5.11.96",
     "@types/multer": "^1.4.12",
     "@types/node": "^22.13.10",
     "@types/passport-jwt": "^4.0.1",
