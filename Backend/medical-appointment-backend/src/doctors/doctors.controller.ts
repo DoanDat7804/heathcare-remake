@@ -2,6 +2,8 @@ import { Controller, Get, Post, Patch, Delete, Body, Param } from '@nestjs/commo
 import { DoctorsService } from './doctors.service';
 import { CreateDoctorDto } from './dto/create-doctor.dto';
 import { UpdateDoctorDto } from './dto/update-doctor.dto';
+import {DoctorResponseDto} from '../doctors/dto/doctor-response.dto';
+
 
 @Controller('doctors')
 export class DoctorsController {
@@ -13,22 +15,22 @@ export class DoctorsController {
   }
   
   @Post()
-  create(@Body() createDoctorDto: CreateDoctorDto) {
+  create(@Body() createDoctorDto: CreateDoctorDto): Promise<DoctorResponseDto> {
     return this.doctorsService.create(createDoctorDto);
   }
-
+  
   @Get()
-  findAll() {
+  findAll(): Promise<DoctorResponseDto[]> {
     return this.doctorsService.findAll();
   }
-
+  
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: string): Promise<DoctorResponseDto> {
     return this.doctorsService.findOne(id);
   }
-
+  
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateDoctorDto: UpdateDoctorDto) {
+  update(@Param('id') id: string, @Body() updateDoctorDto: UpdateDoctorDto): Promise<DoctorResponseDto> {
     return this.doctorsService.update(id, updateDoctorDto);
   }
 

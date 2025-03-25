@@ -1,5 +1,5 @@
-import { IsString, IsEmail, IsInt, IsArray, IsOptional, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
+// src/doctors/dto/doctor-response.dto.ts
+import { IsString, IsEmail, IsInt, IsArray, IsOptional, IsBoolean } from 'class-validator';
 
 export class HospitalDto {
   @IsString()
@@ -13,15 +13,15 @@ export class HospitalDto {
   department?: string;
 }
 
-export class CreateDoctorDto {
+export class DoctorResponseDto {
+  @IsString()
+  id: string;
+
   @IsString()
   name: string;
 
   @IsEmail()
   email: string;
-
-  @IsString()
-  password: string;
 
   @IsString()
   phone: string;
@@ -39,8 +39,16 @@ export class CreateDoctorDto {
   @IsString({ each: true })
   languages: string[];
 
-  @ValidateNested()
-  @Type(() => HospitalDto)
   @IsOptional()
   hospital?: HospitalDto;
+
+  @IsString()
+  @IsOptional()
+  avatar?: string;
+
+  @IsBoolean()
+  isActive: boolean;
+
+  @IsString()
+  role: string;
 }

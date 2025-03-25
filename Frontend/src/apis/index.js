@@ -1,8 +1,7 @@
 import axios from 'axios';
-import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-const API_URL = 'http://localhost:3000'; // Thay bằng URL backend thực tế của bạn
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000'; // Lấy từ .env
 
 const api = axios.create({
   baseURL: API_URL,
@@ -11,10 +10,10 @@ const api = axios.create({
   },
 });
 
-// Thêm interceptor để tự động gắn token vào header nếu có
+// Interceptor cho request: Thêm token vào header
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token'); // Lấy token từ localStorage
+    const token = localStorage.getItem('token');
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
@@ -23,18 +22,22 @@ api.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-// function App() {
-//   return (
-//     <div>
-//       <AdminDashboard />
-//       <ToastContainer />
-//     </div>
-//   );
-// }
+// Interceptor cho response: Xử lý lỗi chung
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token hết hạn hoặc không hợp lệ
+      localStorage.removeItem('token');
+      window.location.href = '/login'; // Chuyển hướng đến trang login
+    }
+    return Promise.reject(error); // Ném lỗi để các hàm API xử lý
+  },
+);
 
 export default api;
 
-// Export tất cả các API khác
+// Export các API khác
 export * from './authApi';
 export * from './userApi';
 export * from './doctorApi';

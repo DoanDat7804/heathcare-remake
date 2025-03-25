@@ -9,6 +9,7 @@ import { CreateUserDto } from '../users/dto/create-user.dto';
 import { UpdateUserDto } from '../users/dto/update-user.dto';
 import { CreateDoctorDto } from '../doctors/dto/create-doctor.dto';
 import { UpdateDoctorDto } from '../doctors/dto/update-doctor.dto';
+import {DoctorResponseDto} from '../doctors/dto/doctor-response.dto';
 import { CreateNewsDto } from '../news/dto/create-news.dto';
 import { UpdateNewsDto } from '../news/dto/update-news.dto';
 import { UpdateAppointmentDto } from '../appointments/dto/update-appointment.dto';
@@ -46,20 +47,20 @@ export class AdminController {
 
   // Quản lý Doctors
   @Get('doctors')
-  getAllDoctors(): Promise<any[]> {
+  getAllDoctors(): Promise<DoctorResponseDto[]> {
     return this.adminService.getAllDoctors();
   }
-
+  
   @Post('doctors')
-  createDoctor(@Body() createDoctorDto: CreateDoctorDto): Promise<any> {
+  createDoctor(@Body() createDoctorDto: CreateDoctorDto): Promise<DoctorResponseDto> {
     return this.adminService.createDoctor(createDoctorDto);
   }
-
+  
   @Patch('doctors/:id')
   updateDoctor(
     @Param('id', ParseObjectIdPipe) id: string,
     @Body() updateDoctorDto: UpdateDoctorDto,
-  ): Promise<any> {
+  ): Promise<DoctorResponseDto> {
     return this.adminService.updateDoctor(id, updateDoctorDto);
   }
 

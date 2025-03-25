@@ -9,6 +9,7 @@ import { UpdateUserDto } from '../users/dto/update-user.dto';
 import { UserResponseDto } from '../users/dto/user-response.dto';
 import { CreateDoctorDto } from '../doctors/dto/create-doctor.dto';
 import { UpdateDoctorDto } from '../doctors/dto/update-doctor.dto';
+import {DoctorResponseDto} from '../doctors/dto/doctor-response.dto';
 import { CreateNewsDto } from '../news/dto/create-news.dto';
 import { UpdateNewsDto } from '../news/dto/update-news.dto';
 import { UpdateAppointmentDto } from '../appointments/dto/update-appointment.dto';
@@ -40,15 +41,15 @@ export class AdminService {
   }
 
    // Quản lý Doctors
-   async getAllDoctors(): Promise<any[]> { // Thay bằng DoctorResponseDto nếu có
+   async getAllDoctors(): Promise<DoctorResponseDto[]> {
     return this.doctorsService.findAll();
   }
-
-  async createDoctor(createDoctorDto: CreateDoctorDto): Promise<any> { // Thay bằng DoctorResponseDto nếu có
+  
+  async createDoctor(createDoctorDto: CreateDoctorDto): Promise<DoctorResponseDto> {
     return this.doctorsService.create(createDoctorDto);
   }
-
-  async updateDoctor(id: string, updateDoctorDto: UpdateDoctorDto): Promise<any> { // Thay bằng DoctorResponseDto nếu có
+  
+  async updateDoctor(id: string, updateDoctorDto: UpdateDoctorDto): Promise<DoctorResponseDto> {
     const updatedDoctor = await this.doctorsService.update(id, updateDoctorDto);
     if (!updatedDoctor) throw new NotFoundException(`Doctor with ID ${id} not found`);
     return updatedDoctor;
@@ -94,5 +95,4 @@ export class AdminService {
     const result = await this.appointmentsService.remove(id);
     if (!result) throw new NotFoundException(`Appointment with ID ${id} not found`);
   }
-
 }
