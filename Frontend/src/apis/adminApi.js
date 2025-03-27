@@ -1,15 +1,16 @@
+// adminApi.js
 import api from './index';
 import { toast } from 'react-toastify';
+import { handleError } from './errorHandler';
 
 export const adminApi = {
   // Quản lý Users
   getAllUsers: async () => {
     try {
       const response = await api.get('/admin/users');
-      return response.data; // Trả về dữ liệu từ response
+      return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to fetch users');
-      throw error; // Ném lỗi để component gọi hàm xử lý tiếp
+      handleError(error, 'Failed to fetch users');
     }
   },
   createUser: async (userData) => {
@@ -18,8 +19,7 @@ export const adminApi = {
       toast.success('User created successfully');
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to create user');
-      throw error;
+      handleError(error, 'Failed to create user');
     }
   },
   updateUser: async (id, userData) => {
@@ -28,17 +28,16 @@ export const adminApi = {
       toast.success('User updated successfully');
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update user');
-      throw error;
+      handleError(error, 'Failed to update user');
     }
   },
   deleteUser: async (id) => {
     try {
-      await api.delete(`/admin/users/${id}`);
+      const response = await api.delete(`/admin/users/${id}`);
       toast.success('User deleted successfully');
+      return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to delete user');
-      throw error;
+      handleError(error, 'Failed to delete user');
     }
   },
 
@@ -48,8 +47,7 @@ export const adminApi = {
       const response = await api.get('/admin/doctors');
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to fetch doctors');
-      throw error;
+      handleError(error, 'Failed to fetch doctors');
     }
   },
   createDoctor: async (doctorData) => {
@@ -58,8 +56,7 @@ export const adminApi = {
       toast.success('Doctor created successfully');
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to create doctor');
-      throw error;
+      handleError(error, 'Failed to create doctor');
     }
   },
   updateDoctor: async (id, doctorData) => {
@@ -68,17 +65,16 @@ export const adminApi = {
       toast.success('Doctor updated successfully');
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update doctor');
-      throw error;
+      handleError(error, 'Failed to update doctor');
     }
   },
   deleteDoctor: async (id) => {
     try {
-      await api.delete(`/admin/doctors/${id}`);
+      const response = await api.delete(`/admin/doctors/${id}`);
       toast.success('Doctor deleted successfully');
+      return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to delete doctor');
-      throw error;
+      handleError(error, 'Failed to delete doctor');
     }
   },
 
@@ -88,8 +84,7 @@ export const adminApi = {
       const response = await api.get('/admin/news');
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to fetch news');
-      throw error;
+      handleError(error, 'Failed to fetch news');
     }
   },
   createNews: async (newsData) => {
@@ -98,8 +93,7 @@ export const adminApi = {
       toast.success('News created successfully');
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to create news');
-      throw error;
+      handleError(error, 'Failed to create news');
     }
   },
   updateNews: async (id, newsData) => {
@@ -108,28 +102,26 @@ export const adminApi = {
       toast.success('News updated successfully');
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update news');
-      throw error;
+      handleError(error, 'Failed to update news');
     }
   },
   deleteNews: async (id) => {
     try {
-      await api.delete(`/admin/news/${id}`);
+      const response = await api.delete(`/admin/news/${id}`);
       toast.success('News deleted successfully');
+      return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to delete news');
-      throw error;
+      handleError(error, 'Failed to delete news');
     }
   },
 
-  // Quản lý Appointments (thêm mới)
+  // Quản lý Appointments
   getAllAppointments: async () => {
     try {
       const response = await api.get('/admin/appointments');
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to fetch appointments');
-      throw error;
+      handleError(error, 'Failed to fetch appointments');
     }
   },
   updateAppointment: async (id, appointmentData) => {
@@ -138,17 +130,16 @@ export const adminApi = {
       toast.success('Appointment updated successfully');
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update appointment');
-      throw error;
+      handleError(error, 'Failed to update appointment');
     }
   },
   deleteAppointment: async (id) => {
     try {
-      await api.delete(`/admin/appointments/${id}`);
+      const response = await api.delete(`/admin/appointments/${id}`);
       toast.success('Appointment deleted successfully');
+      return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to delete appointment');
-      throw error;
+      handleError(error, 'Failed to delete appointment');
     }
   },
 };

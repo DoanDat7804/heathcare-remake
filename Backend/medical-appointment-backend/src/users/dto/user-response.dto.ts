@@ -1,5 +1,5 @@
 // src/users/dto/user-response.dto.ts
-import { IsString, IsBoolean, IsOptional } from 'class-validator';
+import { IsString, IsBoolean, IsOptional, IsDate, Matches } from 'class-validator';
 
 export class UserResponseDto {
   @IsString()
@@ -11,7 +11,7 @@ export class UserResponseDto {
   @IsString()
   email: string;
 
-  @IsString()
+  @Matches(/^(0[1-9][0-9]{8})$/, { message: 'phone must be a valid Vietnamese phone number (e.g., 0987654321)' })
   phone: string;
 
   @IsString()
@@ -19,6 +19,10 @@ export class UserResponseDto {
 
   @IsBoolean()
   isActive: boolean;
+
+  @IsDate()
+  @IsOptional()
+  dateOfBirth?: Date;
 
   @IsOptional()
   @IsString()

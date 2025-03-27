@@ -1,5 +1,5 @@
 // src/users/dto/update-user.dto.ts
-import { IsString, IsEmail, IsPhoneNumber, IsOptional, IsBoolean, IsDate } from 'class-validator';
+import { IsString, IsEmail, IsPhoneNumber, IsOptional, IsBoolean, IsDate, IsEnum, IsISO8601, Matches } from 'class-validator';
 
 export class UpdateUserDto {
   @IsString()
@@ -14,16 +14,17 @@ export class UpdateUserDto {
   @IsOptional()
   password?: string;
 
-  @IsPhoneNumber()
+  @Matches(/^(0[1-9][0-9]{8})$/, { message: 'phone must be a valid Vietnamese phone number (e.g., 0987654321)' })
   @IsOptional()
   phone?: string;
 
-  @IsDate()
+  @IsISO8601() // Thay @IsDate() bằng @IsISO8601()
   @IsOptional()
-  dateOfBirth?: Date;
+  dateOfBirth?: string; // Chuyển sang string để nhận chuỗi ISO
 
   @IsString()
   @IsOptional()
+  @IsEnum(['Nam', 'Nữ', 'Khác'])
   gender?: string;
 
   @IsOptional()

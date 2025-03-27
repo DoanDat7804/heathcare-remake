@@ -28,7 +28,13 @@ export class UsersController {
 
   @Get(':id')
   @Roles('admin', 'patient')
-  findOne(@Param('id', ParseObjectIdPipe) id: string): Promise<UserResponseDto> {
+  findOne(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Req() req: any,
+  ): Promise<UserResponseDto> {
+    if (req.user.role === 'patient' && req.user.id !== id) {
+      throw new ForbiddenException('You can only view your own profile');
+    }
     return this.usersService.findOne(id);
   }
 

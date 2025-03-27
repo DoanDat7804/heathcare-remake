@@ -48,7 +48,7 @@ const App = () => (
               <Route path="/DoctorDashboard" element={<DoctorDashboard />} />
               <Route path="/admin/Dashboard" element={<AdminDashboard />} />
               <Route path="/admin/UserManagement" element={<UserManagement />} />
-              <Route path="*" element={<NotFound />} />
+              {/* <Route path="*" element={<NotFound />} /> */}
             </Routes>
           </BrowserRouter>
         </TooltipProvider>

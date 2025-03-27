@@ -1,7 +1,7 @@
 import axios from 'axios';
 import 'react-toastify/dist/ReactToastify.css';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000'; // Lấy từ .env
+const API_URL = 'http://localhost:3000'; // Lấy từ .env
 
 const api = axios.create({
   baseURL: API_URL,
@@ -29,7 +29,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       // Token hết hạn hoặc không hợp lệ
       localStorage.removeItem('token');
-      window.location.href = '/login'; // Chuyển hướng đến trang login
+      window.location.href = '/admin/login'; // Chuyển hướng đến trang login
     }
     return Promise.reject(error); // Ném lỗi để các hàm API xử lý
   },
