@@ -14,7 +14,7 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  // Hàm xác thực chung cho cả User và Doctor
+  // Rest of the code remains unchanged
   async validateUser(email: string, password: string): Promise<any> {
     let user = await this.userModel.findOne({ email });
     if (!user) {
@@ -30,7 +30,6 @@ export class AuthService {
     return result;
   }
 
-  // Đăng nhập chung (dành cho tất cả vai trò)
   async login(email: string, password: string) {
     const user = await this.validateUser(email, password);
     const payload = { email: user.email, sub: user._id, role: user.role };
@@ -39,7 +38,6 @@ export class AuthService {
     };
   }
 
-  // Đăng nhập riêng cho admin
   async adminLogin(email: string, password: string) {
     const user = await this.validateUser(email, password);
     if (user.role !== 'admin') {
@@ -51,13 +49,12 @@ export class AuthService {
     };
   }
 
-  // Đăng ký user (mặc định role là patient)
   async register(userDto: any) {
     const hashedPassword = await bcrypt.hash(userDto.password, 10);
     const newUser = new this.userModel({
       ...userDto,
       password: hashedPassword,
-      role: userDto.role || 'patient', // Mặc định là patient nếu không chỉ định
+      role: userDto.role || 'patient',
     });
     return newUser.save();
   }

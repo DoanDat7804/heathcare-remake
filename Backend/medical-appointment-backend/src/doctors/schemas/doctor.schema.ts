@@ -4,7 +4,7 @@ import * as mongoose from 'mongoose';
 
 @Schema({ timestamps: true })
 export class Doctor {
-  @Prop({ required: true })
+  @Prop({ required: true, unique: true })
   name: string;
 
   @Prop({ required: true, unique: true })
@@ -22,7 +22,7 @@ export class Doctor {
   @Prop({ required: true })
   gender: string;
 
-  @Prop({ required: true, enum: ['doctor', 'admin', 'staff'], default: 'doctor' }) // Thêm role
+  @Prop({ required: true, enum: ['doctor', 'staff'], default: 'doctor' }) // Thêm role
   role: string;
 
   @Prop({ default: true })
