@@ -14,6 +14,7 @@ import { CreateNewsDto } from '../news/dto/create-news.dto';
 import { UpdateNewsDto } from '../news/dto/update-news.dto';
 import { UpdateAppointmentDto } from '../appointments/dto/update-appointment.dto';
 import { ParseObjectIdPipe } from '../common/pipes/parse-object-id.pipe';
+import {AppointmentResponseDto} from '../appointments/dto/appointment-response.dto';
 
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -93,22 +94,22 @@ export class AdminController {
     return this.adminService.deleteNews(id);
   }
 
-  // Quản lý Appointments
-  @Get('appointments')
-  getAllAppointments(): Promise<any[]> {
-    return this.adminService.getAllAppointments();
-  }
+// Quản lý Appointments
+@Get('appointments')
+getAllAppointments(): Promise<AppointmentResponseDto[]> {
+  return this.adminService.getAllAppointments();
+}
 
-  @Patch('appointments/:id')
-  updateAppointment(
-    @Param('id', ParseObjectIdPipe) id: string,
-    @Body() updateAppointmentDto: UpdateAppointmentDto,
-  ): Promise<any> {
-    return this.adminService.updateAppointment(id, updateAppointmentDto);
-  }
+@Patch('appointments/:id')
+updateAppointment(
+  @Param('id', ParseObjectIdPipe) id: string,
+  @Body() updateAppointmentDto: UpdateAppointmentDto,
+): Promise<AppointmentResponseDto> {
+  return this.adminService.updateAppointment(id, updateAppointmentDto);
+}
 
-  @Delete('appointments/:id')
-  deleteAppointment(@Param('id', ParseObjectIdPipe) id: string): Promise<void> {
-    return this.adminService.deleteAppointment(id);
-  }
+@Delete('appointments/:id')
+deleteAppointment(@Param('id', ParseObjectIdPipe) id: string): Promise<void> {
+  return this.adminService.deleteAppointment(id);
+}
 }

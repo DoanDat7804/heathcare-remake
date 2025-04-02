@@ -13,6 +13,8 @@ import {DoctorResponseDto} from '../doctors/dto/doctor-response.dto';
 import { CreateNewsDto } from '../news/dto/create-news.dto';
 import { UpdateNewsDto } from '../news/dto/update-news.dto';
 import { UpdateAppointmentDto } from '../appointments/dto/update-appointment.dto';
+import {AppointmentResponseDto} from '../appointments/dto/appointment-response.dto';
+import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class AdminService {
@@ -81,18 +83,21 @@ export class AdminService {
   }
 
   // Quản lý Appointments
-  async getAllAppointments(): Promise<any[]> { // Thay bằng AppointmentResponseDto nếu có
-    return this.appointmentsService.findAll();
+  async getAllAppointments(): Promise<AppointmentResponseDto[]> {
+    const appointments = await this.appointmentsService.findAll();
+    return plainToInstance(AppointmentResponseDto, appointments);
   }
 
-  async updateAppointment(id: string, updateAppointmentDto: UpdateAppointmentDto): Promise<any> { // Thay bằng AppointmentResponseDto nếu có
+  async updateAppointment(id: string, updateAppointmentDto: UpdateAppointmentDto): Promise<AppointmentResponseDto> {
     const updatedAppointment = await this.appointmentsService.update(id, updateAppointmentDto);
-    if (!updatedAppointment) throw new NotFoundException(`Appointment with ID ${id} not found`);
-    return updatedAppointment;
+    if (!updatedAppointment) {
+      throw new NotFoundException(`Appointment with ID ${id} not found`);
+    }
+    return plainToInstance(AppointmentResponseDto, updatedAppointment);
+  }
+  
+  async deleteAppointment(id: string): Promise<void> {
+    await this.appointmentsService.remove(id); // Không cần kiểm tra result
   }
 
-  async deleteAppointment(id: string): Promise<void> {
-    const result = await this.appointmentsService.remove(id);
-    if (!result) throw new NotFoundException(`Appointment with ID ${id} not found`);
-  }
 }
