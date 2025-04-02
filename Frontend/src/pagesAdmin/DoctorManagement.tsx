@@ -10,6 +10,7 @@ interface Doctor {
   phone: string;
   specialty: string;
   gender: string;
+  role: string;
   isActive?: boolean;
 }
 
@@ -25,8 +26,9 @@ const DoctorManagement: React.FC = () => {
     email: '',
     password: '',
     phone: '',
-    specialty: 'Đa Khoa', // Giá trị mặc định
+    specialty: 'Đa Khoa',
     gender: 'Nam',
+    role: 'doctor',
   });
   const [editDoctor, setEditDoctor] = useState<Doctor | null>(null);
   const [isDuplicate, setIsDuplicate] = useState<boolean>(false);
@@ -40,6 +42,8 @@ const DoctorManagement: React.FC = () => {
     'Tim Mạch Khoa',
   ];
 
+  const roles = ['doctor', 'admin', 'staff'];
+
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
@@ -47,12 +51,14 @@ const DoctorManagement: React.FC = () => {
         const normalizedData = data.map((doctor: Doctor) => ({
           ...doctor,
           gender: doctor.gender || 'Nam',
+          role: doctor.role || 'doctor',
           isActive: doctor.isActive !== undefined ? doctor.isActive : true,
         }));
         setDoctors(normalizedData || []);
       } catch (err: any) {
-        console.error('Lỗi khi tải danh sách bác sĩ:', err.response?.data);
-        toast.error('Lỗi khi tải danh sách bác sĩ: ' + (err.response?.data?.message || err.message));
+        const errorMessage = err.response?.data?.message || err.message || 'Không thể kết nối đến server';
+        console.error('Lỗi khi tải danh sách bác sĩ:', err);
+        toast.error('Lỗi khi tải danh sách bác sĩ: ' + errorMessage);
         setDoctors([]);
       } finally {
         setLoading(false);
@@ -80,7 +86,8 @@ const DoctorManagement: React.FC = () => {
       !newDoctor.password ||
       !newDoctor.phone ||
       !newDoctor.specialty ||
-      !newDoctor.gender
+      !newDoctor.gender ||
+      !newDoctor.role
     ) {
       toast.error('Vui lòng điền đầy đủ thông tin!');
       return;
@@ -93,6 +100,7 @@ const DoctorManagement: React.FC = () => {
         phone: newDoctor.phone,
         specialty: newDoctor.specialty,
         gender: newDoctor.gender,
+        role: newDoctor.role,
       };
       console.log('Dữ liệu gửi đi (POST):', doctorData);
       await adminApi.createDoctor(doctorData);
@@ -106,15 +114,13 @@ const DoctorManagement: React.FC = () => {
         phone: '',
         specialty: 'Đa Khoa',
         gender: 'Nam',
+        role: 'doctor',
       });
       setShowAddForm(false);
       toast.success('Thêm bác sĩ thành công!');
     } catch (err: any) {
-      console.error('Lỗi từ server (POST):', err.response?.data);
-      const errorMessage =
-        err.response?.data?.message && typeof err.response?.data?.message === 'string'
-          ? err.response?.data?.message
-          : JSON.stringify(err.response?.data || err.message);
+      const errorMessage = err.response?.data?.message || err.message || 'Không thể kết nối đến server';
+      console.error('Lỗi từ server (POST):', err);
       toast.error('Lỗi khi thêm bác sĩ: ' + errorMessage);
     }
   };
@@ -132,7 +138,8 @@ const DoctorManagement: React.FC = () => {
       !editDoctor.email ||
       !editDoctor.phone ||
       !editDoctor.specialty ||
-      !editDoctor.gender
+      !editDoctor.gender ||
+      !editDoctor.role
     ) {
       toast.error('Vui lòng điền đầy đủ thông tin!');
       return;
@@ -144,6 +151,7 @@ const DoctorManagement: React.FC = () => {
         phone: editDoctor.phone,
         specialty: editDoctor.specialty,
         gender: editDoctor.gender,
+        role: editDoctor.role,
         ...(editDoctor.password ? { password: editDoctor.password } : {}),
       };
       console.log('Dữ liệu gửi đi (PATCH):', doctorData);
@@ -154,11 +162,8 @@ const DoctorManagement: React.FC = () => {
       setEditDoctor(null);
       toast.success('Cập nhật bác sĩ thành công!');
     } catch (err: any) {
-      console.error('Lỗi từ server (PATCH):', err.response?.data);
-      const errorMessage =
-        err.response?.data?.message && typeof err.response?.data?.message === 'string'
-          ? err.response?.data?.message
-          : JSON.stringify(err.response?.data || err.message);
+      const errorMessage = err.response?.data?.message || err.message || 'Không thể kết nối đến server';
+      console.error('Lỗi từ server (PATCH):', err);
       toast.error('Lỗi khi cập nhật bác sĩ: ' + errorMessage);
     }
   };
@@ -172,19 +177,8 @@ const DoctorManagement: React.FC = () => {
         setDoctors(data || []);
         toast.success('Xóa bác sĩ thành công!');
       } catch (err: any) {
-        console.error('Lỗi từ server (DELETE):', err.response?.data);
-        let errorMessage = 'Lỗi không xác định';
-        if (err.response?.data) {
-          if (typeof err.response?.data.message === 'string') {
-            errorMessage = err.response?.data.message;
-          } else if (Array.isArray(err.response?.data.message)) {
-            errorMessage = err.response?.data.message.join(', ');
-          } else {
-            errorMessage = JSON.stringify(err.response?.data, null, 2);
-          }
-        } else {
-          errorMessage = err.message || 'Không thể kết nối server';
-        }
+        const errorMessage = err.response?.data?.message || err.message || 'Không thể kết nối đến server';
+        console.error('Lỗi từ server (DELETE):', err);
         toast.error('Lỗi khi xóa bác sĩ: ' + errorMessage);
       }
     }
@@ -202,6 +196,7 @@ const DoctorManagement: React.FC = () => {
           doctor.phone.toLowerCase().includes(searchLower) ||
           doctor.specialty.toLowerCase().includes(searchLower) ||
           doctor.gender.toLowerCase().includes(searchLower) ||
+          doctor.role.toLowerCase().includes(searchLower) ||
           statusText.toLowerCase().includes(searchLower)
         );
       })
@@ -286,6 +281,17 @@ const DoctorManagement: React.FC = () => {
               <option value="Nữ">Nữ</option>
               <option value="Khác">Khác</option>
             </select>
+            <select
+              value={newDoctor.role}
+              onChange={(e) => setNewDoctor({ ...newDoctor, role: e.target.value })}
+              className="border p-2 rounded mb-2 w-full"
+            >
+              {roles.map((role) => (
+                <option key={role} value={role}>
+                  {role.charAt(0).toUpperCase() + role.slice(1)}
+                </option>
+              ))}
+            </select>
             <button
               onClick={handleAddDoctor}
               className={`bg-green-600 text-white px-4 py-2 rounded ${
@@ -363,6 +369,17 @@ const DoctorManagement: React.FC = () => {
               <option value="Nữ">Nữ</option>
               <option value="Khác">Khác</option>
             </select>
+            <select
+              value={editDoctor.role}
+              onChange={(e) => setEditDoctor({ ...editDoctor, role: e.target.value })}
+              className="border p-2 rounded mb-2 w-full"
+            >
+              {roles.map((role) => (
+                <option key={role} value={role}>
+                  {role.charAt(0).toUpperCase() + role.slice(1)}
+                </option>
+              ))}
+            </select>
             <button
               onClick={handleEditDoctor}
               className={`bg-green-600 text-white px-4 py-2 rounded ${
@@ -389,6 +406,7 @@ const DoctorManagement: React.FC = () => {
               <th className="p-3 text-left">SĐT</th>
               <th className="p-3 text-left">Chuyên khoa</th>
               <th className="p-3 text-left">Giới tính</th>
+              <th className="p-3 text-left">Vai trò</th>
               <th className="p-3 text-left">Trạng thái</th>
               <th className="p-3 text-left">Hành động</th>
             </tr>
@@ -401,6 +419,7 @@ const DoctorManagement: React.FC = () => {
                 <td className="p-3">{doctor.phone}</td>
                 <td className="p-3">{doctor.specialty}</td>
                 <td className="p-3">{doctor.gender}</td>
+                <td className="p-3">{doctor.role.charAt(0).toUpperCase() + doctor.role.slice(1)}</td>
                 <td className="p-3">
                   <span className={doctor.isActive ? 'text-green-600' : 'text-red-600'}>
                     {doctor.isActive ? 'Hoạt động' : 'Không hoạt động'}

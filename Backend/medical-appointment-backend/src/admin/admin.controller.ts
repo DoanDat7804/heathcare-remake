@@ -88,10 +88,10 @@ export class AdminController {
     return this.adminService.updateNews(id, updateNewsDto);
   }
 
-  @Delete('news/:id')
-  deleteNews(@Param('id', ParseObjectIdPipe) id: string): Promise<void> {
-    return this.adminService.deleteNews(id);
-  }
+  // @Delete('news/:id')
+  // deleteNews(@Param('id', ParseObjectIdPipe) id: string): Promise<void> {
+  //   return this.adminService.deleteNews(id);
+  // }
 
   // Quản lý Appointments
   @Get('appointments')

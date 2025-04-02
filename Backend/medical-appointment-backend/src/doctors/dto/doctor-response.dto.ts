@@ -19,6 +19,9 @@ export class DoctorResponseDto {
   @IsString()
   gender: string;
 
+  @IsString()
+  role: string;
+
   @IsBoolean()
   isActive: boolean;
 }

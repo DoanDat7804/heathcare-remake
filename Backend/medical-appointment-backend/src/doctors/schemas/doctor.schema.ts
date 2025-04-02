@@ -22,6 +22,9 @@ export class Doctor {
   @Prop({ required: true })
   gender: string;
 
+  @Prop({ required: true, enum: ['doctor', 'admin', 'staff'], default: 'doctor' }) // Thêm role
+  role: string;
+
   @Prop({ default: true })
   isActive: boolean;
 }

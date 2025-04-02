@@ -56,8 +56,9 @@ export class AdminService {
   }
 
   async deleteDoctor(id: string): Promise<void> {
-    const result = await this.doctorsService.remove(id);
-    if (!result) throw new NotFoundException(`Doctor with ID ${id} not found`);
+    const doctor = await this.doctorsService.findOne(id);
+    if (!doctor) throw new NotFoundException(`Bác sĩ với ID ${id} không tìm thấy`);
+    await this.doctorsService.remove(id);
   }
 
   // Quản lý News
@@ -75,10 +76,10 @@ export class AdminService {
     return updatedNews;
   }
 
-  async deleteNews(id: string): Promise<void> {
-    const result = await this.newsService.remove(id);
-    if (!result) throw new NotFoundException(`News with ID ${id} not found`);
-  }
+  // async deleteNews(id: string): Promise<void> {
+  //   const result = await this.newsService.remove(id);
+  //   if (!result) throw new NotFoundException(`News with ID ${id} not found`);
+  // }
 
   // Quản lý Appointments
   async getAllAppointments(): Promise<any[]> { // Thay bằng AppointmentResponseDto nếu có

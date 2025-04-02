@@ -1,5 +1,4 @@
-// src/doctors/dto/update-doctor.dto.ts
-import { IsString, IsEmail, IsInt, IsArray, IsOptional } from 'class-validator';
+import { IsString, IsEmail, IsOptional } from 'class-validator';
 
 export class HospitalUpdateDto {
   @IsString()
@@ -39,4 +38,8 @@ export class UpdateDoctorDto {
   @IsString()
   @IsOptional()
   gender?: string;
+
+  @IsString()
+  @IsOptional()
+  role?: string;
 }

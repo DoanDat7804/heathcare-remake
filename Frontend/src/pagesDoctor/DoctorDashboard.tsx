@@ -1,23 +1,19 @@
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate } from "react-router-dom";
-import { Calendar, User, LogOut, Clock, MessageSquare } from "lucide-react"; // Thêm MessageSquare
-import { useState } from "react";
+import { Calendar, User, LogOut, Clock, MessageSquare } from "lucide-react";
+import { useState, useEffect } from "react"; // Thêm useEffect
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Input } from "@/components/ui/input";
+import { doctorApi } from "../apis/doctorApi"; // Import doctorApi
+import { toast } from "sonner"; // Thêm toast để hiển thị thông báo
 
 const AppointmentCard = ({
   patientName,
   time,
   status,
   onViewDetails,
-  onChat, // Thêm prop cho sự kiện chat
-}: {
-  patientName: string;
-  time: string;
-  status: string;
-  onViewDetails: () => void;
-  onChat: () => void;
+  onChat,
 }) => {
   return (
     <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-soft hover:shadow-md transition-shadow">
@@ -53,15 +49,7 @@ const AppointmentCard = ({
   );
 };
 
-const BusyTimeCard = ({
-  startTime,
-  endTime,
-  onDelete,
-}: {
-  startTime: string;
-  endTime: string;
-  onDelete: () => void;
-}) => {
+const BusyTimeCard = ({ startTime, endTime, onDelete }) => {
   return (
     <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-soft hover:shadow-md transition-shadow">
       <div className="flex items-center gap-4">
@@ -83,67 +71,86 @@ const BusyTimeCard = ({
 
 const DoctorDashboard = () => {
   const navigate = useNavigate();
-  const [doctor] = useState({
-    name: "TS. Nguyễn Văn Anh",
-    title: "Trưởng Khoa Nội",
-    image:
-      "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8ZG9jdG9yfGVufDB8fDB8fHww",
-    details: "Kinh nghiệm 15 năm trong lĩnh vực nội khoa, chuyên gia về các bệnh tiêu hóa và gan mật.",
-  });
-
-  const [appointments] = useState([
-    {
-      patientName: "Nguyễn Thị Hoa",
-      time: "21/03/2025 - 09:00 AM",
-      status: "Confirmed",
-    },
-    {
-      patientName: "Trần Văn Bình",
-      time: "21/03/2025 - 10:30 AM",
-      status: "Pending",
-    },
-    {
-      patientName: "Lê Thị Mai",
-      time: "22/03/2025 - 02:00 PM",
-      status: "Cancelled",
-    },
-  ]);
-
+  const [doctor, setDoctor] = useState(null); // Thay vì dữ liệu tĩnh
+  const [appointments, setAppointments] = useState([]);
   const [busyTimes, setBusyTimes] = useState([]);
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
+  const [loading, setLoading] = useState(true); // Thêm trạng thái loading
+
+  // Lấy dữ liệu từ API khi component mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Lấy thông tin bác sĩ hiện tại (giả định endpoint /doctors/me)
+        const doctorResponse = await doctorApi.getDoctorById("me"); // Thay "me" bằng ID thực tế nếu cần
+        setDoctor(doctorResponse.data);
+
+        // Lấy danh sách lịch hẹn (giả định endpoint /doctors/me/appointments)
+        const appointmentsResponse = await doctorApi.getAllDoctors(); // Thay bằng endpoint thực tế nếu có
+        setAppointments(appointmentsResponse.data.appointments || []);
+
+        // Lấy danh sách thời gian bận (giả định endpoint /doctors/me/busy-times)
+        const busyTimesResponse = await doctorApi.getAllDoctors(); // Thay bằng endpoint thực tế nếu có
+        setBusyTimes(busyTimesResponse.data.busyTimes || []);
+      } catch (error) {
+        toast.error(error.response?.data?.message || "Không thể tải dữ liệu!");
+        console.error("Lỗi khi tải dữ liệu:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const handleViewAppointmentDetails = (appointment) => {
     navigate("/doctor/appointment-detail", { state: { appointment } });
   };
 
   const handleChat = (patientName) => {
-    // Điều hướng đến trang chat với thông tin bệnh nhân
     navigate("/doctor/chat", { state: { patientName } });
-    // Hoặc bạn có thể mở một modal chat tại đây thay vì điều hướng
-    // Ví dụ: setShowChatModal(true);
   };
 
   const handleLogout = () => {
+    localStorage.removeItem("token"); // Xóa token khi đăng xuất
     navigate("/login");
   };
 
-  const handleAddBusyTime = (e) => {
+  const handleAddBusyTime = async (e) => {
     e.preventDefault();
     if (!startTime || !endTime) {
-      alert("Vui lòng nhập đầy đủ thời gian bắt đầu và kết thúc.");
+      toast.error("Vui lòng nhập đầy đủ thời gian bắt đầu và kết thúc.");
       return;
     }
 
     const newBusyTime = { startTime, endTime };
-    setBusyTimes([...busyTimes, newBusyTime]);
-    setStartTime("");
-    setEndTime("");
+    try {
+      // Gửi yêu cầu thêm thời gian bận (giả định endpoint POST /doctors/me/busy-times)
+      await doctorApi.createDoctor(newBusyTime); // Thay bằng endpoint thực tế nếu có
+      setBusyTimes([...busyTimes, newBusyTime]);
+      setStartTime("");
+      setEndTime("");
+      toast.success("Thêm thời gian bận thành công!");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Không thể thêm thời gian bận!");
+    }
   };
 
-  const handleDeleteBusyTime = (index) => {
-    setBusyTimes(busyTimes.filter((_, i) => i !== index));
+  const handleDeleteBusyTime = async (index) => {
+    const busyTimeToDelete = busyTimes[index];
+    try {
+      // Gửi yêu cầu xóa thời gian bận (giả định endpoint DELETE /doctors/me/busy-times/:id)
+      await doctorApi.deleteDoctor(busyTimeToDelete.id); // Thay bằng ID thực tế từ dữ liệu API
+      setBusyTimes(busyTimes.filter((_, i) => i !== index));
+      toast.success("Xóa thời gian bận thành công!");
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Không thể xóa thời gian bận!");
+    }
   };
+
+  if (loading) {
+    return <div className="text-center py-16">Đang tải dữ liệu...</div>;
+  }
 
   return (
     <>
@@ -161,25 +168,27 @@ const DoctorDashboard = () => {
           </div>
 
           {/* Thông tin bác sĩ */}
-          <div className="bg-white p-6 rounded-lg shadow-soft mb-8 flex items-center gap-6">
-            <img
-              src={doctor.image}
-              alt={doctor.name}
-              className="w-24 h-24 rounded-full object-cover"
-            />
-            <div>
-              <h3 className="text-2xl font-semibold text-hospital-700">{doctor.name}</h3>
-              <p className="text-gray-600">{doctor.title}</p>
-              <p className="text-gray-500 mt-2">{doctor.details}</p>
-              <Button
-                variant="outline"
-                className="mt-4"
-                onClick={() => navigate("/doctor/profile")}
-              >
-                Chỉnh sửa hồ sơ
-              </Button>
+          {doctor && (
+            <div className="bg-white p-6 rounded-lg shadow-soft mb-8 flex items-center gap-6">
+              <img
+                src={doctor.image}
+                alt={doctor.name}
+                className="w-24 h-24 rounded-full object-cover"
+              />
+              <div>
+                <h3 className="text-2xl font-semibold text-hospital-700">{doctor.name}</h3>
+                <p className="text-gray-600">{doctor.title}</p>
+                <p className="text-gray-500 mt-2">{doctor.details}</p>
+                <Button
+                  variant="outline"
+                  className="mt-4"
+                  onClick={() => navigate("/doctor/profile")}
+                >
+                  Chỉnh sửa hồ sơ
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Form đánh dấu thời gian bận */}
           <div className="bg-white p-6 rounded-lg shadow-soft mb-8">
@@ -249,7 +258,7 @@ const DoctorDashboard = () => {
                     time={appointment.time}
                     status={appointment.status}
                     onViewDetails={() => handleViewAppointmentDetails(appointment)}
-                    onChat={() => handleChat(appointment.patientName)} // Truyền hàm chat
+                    onChat={() => handleChat(appointment.patientName)}
                   />
                 ))
               ) : (

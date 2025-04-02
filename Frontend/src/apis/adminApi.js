@@ -110,20 +110,24 @@ export const adminApi = {
   },
   createNews: async (newsData) => {
     try {
+      console.log('Dữ liệu gửi lên:', newsData); // Debug
       const response = await api.post('/admin/news', newsData);
       toast.success('News created successfully');
       return response.data;
     } catch (error) {
+      console.error('Lỗi từ server:', error.response?.data); // Debug chi tiết
       toast.error(error.response?.data?.message || 'Failed to create news');
       throw error;
     }
   },
   updateNews: async (id, newsData) => {
     try {
+      console.log('Dữ liệu gửi đi:', newsData); // Debug
       const response = await api.patch(`/admin/news/${id}`, newsData);
       toast.success('News updated successfully');
       return response.data;
     } catch (error) {
+      console.error('Chi tiết lỗi:', error.response?.data); // Log chi tiết
       toast.error(error.response?.data?.message || 'Failed to update news');
       throw error;
     }

@@ -1,5 +1,4 @@
-import { IsString, IsEmail, IsInt, IsArray, IsOptional, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsString, IsEmail, IsOptional } from 'class-validator';
 
 export class HospitalDto {
   @IsString()
@@ -31,4 +30,8 @@ export class CreateDoctorDto {
 
   @IsString()
   gender: string;
+
+  @IsString()
+  @IsOptional() // Role là tùy chọn, mặc định là 'doctor'
+  role?: string;
 }
