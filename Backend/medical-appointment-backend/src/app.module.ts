@@ -12,7 +12,13 @@ import { ServicesModule } from './services/services.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { FilesModule } from './files/files.module';
 import { AdminModule } from './admin/admin.module';
-import {ChatModule} from './chat/chat.module'
+import {ChatModule} from './chat/chat.module';
+import { DialogflowController } from '../src/dialogflow/dialogflow.controller';
+import { DialogflowService } from '../src/dialogflow/dialogflow.service';
+import { AppointmentsService } from './appointments/appointments.service';
+import { Doctor, DoctorSchema } from './doctors/schemas/doctor.schema';
+import { Appointment, AppointmentSchema } from './appointments/schemas/appointment.schema';
+import { User, UserSchema } from './users/schemas/user.schema';
 
 @Module({
   imports: [
@@ -30,6 +36,14 @@ import {ChatModule} from './chat/chat.module'
     FilesModule,
     AdminModule,
     ChatModule,
+    MongooseModule.forFeature([
+      { name: Doctor.name, schema: DoctorSchema },
+      { name: Appointment.name, schema: AppointmentSchema },
+      { name: User.name, schema: UserSchema },
+    ]),
   ],
+  controllers: [DialogflowController],
+  providers: [DialogflowService, AppointmentsService],
 })
+
 export class AppModule {}

@@ -1,5 +1,5 @@
 // src/users/dto/create-user.dto.ts
-import { IsString, IsEmail, IsPhoneNumber, IsDate, IsOptional, IsEnum, IsISO8601, Matches } from 'class-validator';
+import { IsString, IsEmail, IsPhoneNumber, IsDate, IsOptional, IsEnum, IsISO8601, Matches, IsEmpty } from 'class-validator';
 
 export class CreateUserDto {
   @IsString()
@@ -38,4 +38,5 @@ export class CreateUserDto {
     chronicDiseases: string[];
     currentMedications: string[];
   };
+
 }

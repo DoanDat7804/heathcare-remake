@@ -1,9 +1,9 @@
 import { IsString, IsNotEmpty, IsDateString } from 'class-validator';
 
 export class CreateAppointmentDto {
-  @IsString()
-  @IsNotEmpty()
-  patientId: string;
+  // @IsString()
+  // @IsNotEmpty()
+  // patientId: string;
 
   @IsString()
   @IsNotEmpty()
@@ -20,4 +20,6 @@ export class CreateAppointmentDto {
   @IsString()
   @IsNotEmpty()
   timeSlot: string;
+
+  symptoms?: string[];
 }
