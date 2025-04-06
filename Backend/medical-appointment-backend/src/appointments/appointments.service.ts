@@ -49,9 +49,13 @@ export class AppointmentsService {
     return this.appointmentModel.find({ patientId: userId }).populate('doctorId', 'name specialty').exec();
   }
 
-  async findByDoctor(doctorId: string) {
-    return this.appointmentModel.find({ doctorId }).populate('patientId', 'name').exec();
-  }
+// src/appointments/appointments.service.ts
+async findByDoctor(doctorId: string) {
+  console.log("Finding appointments for doctorId:", doctorId);
+  const appointments = await this.appointmentModel.find({ doctorId }).populate('patientId', 'name').exec();
+  console.log("Appointments found:", appointments);
+  return appointments;
+}
 
   async confirm(id: string, user: any) {
     if (user.role !== 'doctor') {

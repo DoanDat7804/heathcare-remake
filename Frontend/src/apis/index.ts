@@ -1,3 +1,4 @@
+// index.ts
 import axios from 'axios';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -9,17 +10,28 @@ const api = axios.create({
   },
 });
 
+// Interceptor cho request
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('adminToken');
+    // Lấy token linh hoạt: ưu tiên adminToken, rồi doctorToken, rồi token chung
+    const adminToken = localStorage.getItem('adminToken');
+    const doctorToken = localStorage.getItem('doctorToken');
+    const genericToken = localStorage.getItem('token');
+
+    const token = adminToken || doctorToken || genericToken;
+
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
+      console.log('Token gửi đi trong request:', token); // Debug token
+    } else {
+      console.log('Không tìm thấy token trong localStorage');
     }
     return config;
   },
   (error) => Promise.reject(error),
 );
 
+// Interceptor cho response
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -30,8 +42,17 @@ api.interceptors.response.use(
         url: error.config.url,
       });
       if (error.response.status === 401) {
-        localStorage.removeItem('adminToken');
-        window.location.href = '/admin/login';
+        // Xử lý đăng xuất dựa trên loại token
+        if (localStorage.getItem('adminToken')) {
+          localStorage.removeItem('adminToken');
+          window.location.href = '/admin/login';
+        } else if (localStorage.getItem('doctorToken')) {
+          localStorage.removeItem('doctorToken');
+          window.location.href = '/doctor/login';
+        } else if (localStorage.getItem('token')) {
+          localStorage.removeItem('token');
+          window.location.href = '/login'; // Đường dẫn chung nếu cần
+        }
       }
     }
     return Promise.reject(error);

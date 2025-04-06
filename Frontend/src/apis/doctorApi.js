@@ -1,13 +1,14 @@
+// doctorApi.js
 import api from './index';
 
 export const doctorApi = {
-  getAllDoctors: () => api.get('/doctors'),
-  getDoctorById: (id) => api.get(`/doctors/${id}`),
-  createDoctor: (doctorData) => api.post('/doctors', doctorData),
-  updateDoctor: (id, doctorData) => api.patch(`/doctors/${id}`, doctorData),
-  deleteDoctor: (id) => api.delete(`/doctors/${id}`),
-  getAppointments: () => api.get('/doctors/me/appointments'),
-  getBusyTimes: () => api.get('/doctors/me/busy-times'),
-  createBusyTime: (busyTimeData) => api.post('/doctors/me/busy-times', busyTimeData),
-  deleteBusyTime: (id) => api.delete(`/doctors/me/busy-times/${id}`),
+  getAllDoctors: (config = {}) => api.get('/doctors', config),
+  getDoctorById: (id, config = {}) => api.get(`/doctors/${id}`, config),
+  createDoctor: (doctorData, config = {}) => api.post('/doctors', doctorData, config),
+  updateDoctor: (id, doctorData, config = {}) => api.patch(`/doctors/${id}`, doctorData, config),
+  deleteDoctor: (id, config = {}) => api.delete(`/doctors/${id}`, config),
+  getAppointments: (config = {}) => api.get('/appointments/me', config), 
+  getBusyTimes: (config = {}) => api.get('/doctors/me/busy-times', config),
+  createBusyTime: (busyTimeData, config = {}) => api.post('/doctors/me/busy-times', busyTimeData, config),
+  deleteBusyTime: (id, config = {}) => api.delete(`/doctors/me/busy-times/${id}`, config),
 };

@@ -1,20 +1,14 @@
+// DoctorDashboard.jsx
 import { Button } from "@/components/ui/button";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Calendar, User, LogOut, Clock, MessageSquare } from "lucide-react";
-import { useState, useEffect } from "react"; // Thêm useEffect
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
+import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
-import { doctorApi } from "../apis/doctorApi"; // Import doctorApi
-import { toast } from "sonner"; // Thêm toast để hiển thị thông báo
+import { doctorApi } from "../apis/doctorApi";
+import { toast } from "sonner";
 
-const AppointmentCard = ({
-  patientName,
-  time,
-  status,
-  onViewDetails,
-  onChat,
-}) => {
+// AppointmentCard và BusyTimeCard giữ nguyên
+const AppointmentCard = ({ patientName, time, status, onViewDetails, onChat }) => {
   return (
     <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-soft hover:shadow-md transition-shadow">
       <div className="flex items-center gap-4">
@@ -29,14 +23,14 @@ const AppointmentCard = ({
       <div className="flex items-center gap-4">
         <span
           className={`text-sm font-medium px-2 py-1 rounded-full ${
-            status === "Confirmed"
+            status === "confirmed"
               ? "bg-green-100 text-green-700"
-              : status === "Pending"
+              : status === "pending"
               ? "bg-yellow-100 text-yellow-700"
               : "bg-red-100 text-red-700"
           }`}
         >
-          {status === "Confirmed" ? "Đã xác nhận" : status === "Pending" ? "Đang chờ" : "Đã hủy"}
+          {status === "confirmed" ? "Đã xác nhận" : status === "pending" ? "Đang chờ" : "Đã hủy"}
         </span>
         <Button variant="outline" size="sm" onClick={onViewDetails}>
           Xem chi tiết
@@ -71,37 +65,66 @@ const BusyTimeCard = ({ startTime, endTime, onDelete }) => {
 
 const DoctorDashboard = () => {
   const navigate = useNavigate();
-  const [doctor, setDoctor] = useState(null); // Thay vì dữ liệu tĩnh
+  const location = useLocation();
+  const [doctor, setDoctor] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [busyTimes, setBusyTimes] = useState([]);
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
-  const [loading, setLoading] = useState(true); // Thêm trạng thái loading
+  const [loading, setLoading] = useState(true);
 
-  // Lấy dữ liệu từ API khi component mount
   useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/doctor/login", { replace: true });
+      return;
+    }
+
     const fetchData = async () => {
       try {
-        // Lấy thông tin bác sĩ hiện tại (giả định endpoint /doctors/me)
-        const doctorResponse = await doctorApi.getDoctorById("me"); // Thay "me" bằng ID thực tế nếu cần
+        const doctorId = localStorage.getItem("doctorId") || location.state?.doctorId;
+        if (!doctorId) {
+          throw new Error("Không tìm thấy ID bác sĩ!");
+        }
+
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+
+        console.log("Fetching doctor data for ID:", doctorId);
+        const doctorResponse = await doctorApi.getDoctorById(doctorId, config);
+        console.log("Doctor data:", doctorResponse.data);
         setDoctor(doctorResponse.data);
 
-        // Lấy danh sách lịch hẹn (giả định endpoint /doctors/me/appointments)
-        const appointmentsResponse = await doctorApi.getAllDoctors(); // Thay bằng endpoint thực tế nếu có
-        setAppointments(appointmentsResponse.data.appointments || []);
+        console.log("Fetching appointments...");
+        const appointmentsResponse = await doctorApi.getAppointments(config);
+        console.log("Appointments response:", appointmentsResponse);
+        console.log("Appointments data:", appointmentsResponse.data);
 
-        // Lấy danh sách thời gian bận (giả định endpoint /doctors/me/busy-times)
-        const busyTimesResponse = await doctorApi.getAllDoctors(); // Thay bằng endpoint thực tế nếu có
-        setBusyTimes(busyTimesResponse.data.busyTimes || []);
+        const appointmentsData = Array.isArray(appointmentsResponse.data)
+          ? appointmentsResponse.data
+          : [];
+        setAppointments(
+          appointmentsData.map((appt) => ({
+            patientName: appt.patientId?.name || "Unknown",
+            time: `${new Date(appt.date).toLocaleDateString()} ${appt.timeSlot}`,
+            status: appt.status,
+          }))
+        );
+
+        setBusyTimes([]);
       } catch (error) {
-        toast.error(error.response?.data?.message || "Không thể tải dữ liệu!");
-        console.error("Lỗi khi tải dữ liệu:", error);
+        console.error("Lỗi chi tiết:", error.message, error.response?.status, error.response?.data);
+        toast.error(error.message || "Không thể tải dữ liệu!");
+        if (error.response?.status === 401) {
+          localStorage.removeItem("token");
+          localStorage.removeItem("doctorId");
+          navigate("/doctor/login", { replace: true });
+        }
       } finally {
         setLoading(false);
       }
     };
     fetchData();
-  }, []);
+  }, [location.state, navigate]);
 
   const handleViewAppointmentDetails = (appointment) => {
     navigate("/doctor/appointment-detail", { state: { appointment } });
@@ -112,8 +135,9 @@ const DoctorDashboard = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token"); // Xóa token khi đăng xuất
-    navigate("/login");
+    localStorage.removeItem("token");
+    localStorage.removeItem("doctorId");
+    navigate("/doctor/login", { replace: true });
   };
 
   const handleAddBusyTime = async (e) => {
@@ -124,28 +148,38 @@ const DoctorDashboard = () => {
     }
 
     const newBusyTime = { startTime, endTime };
+    const token = localStorage.getItem("token");
+    const config = { headers: { Authorization: `Bearer ${token}` } };
+
     try {
-      // Gửi yêu cầu thêm thời gian bận (giả định endpoint POST /doctors/me/busy-times)
-      await doctorApi.createDoctor(newBusyTime); // Thay bằng endpoint thực tế nếu có
-      setBusyTimes([...busyTimes, newBusyTime]);
+      await doctorApi.createBusyTime(newBusyTime, config);
+      const busyTimesResponse = await doctorApi.getBusyTimes(config);
+      setBusyTimes(busyTimesResponse.data || []);
       setStartTime("");
       setEndTime("");
       toast.success("Thêm thời gian bận thành công!");
     } catch (error) {
-      toast.error(error.response?.data?.message || "Không thể thêm thời gian bận!");
+      toast.error(error.message || "Không thể thêm thời gian bận!");
     }
   };
 
-  const handleDeleteBusyTime = async (index) => {
-    const busyTimeToDelete = busyTimes[index];
+  const handleDeleteBusyTime = async (busyTimeId) => {
+    const token = localStorage.getItem("token");
+    const config = { headers: { Authorization: `Bearer ${token}` } };
+
     try {
-      // Gửi yêu cầu xóa thời gian bận (giả định endpoint DELETE /doctors/me/busy-times/:id)
-      await doctorApi.deleteDoctor(busyTimeToDelete.id); // Thay bằng ID thực tế từ dữ liệu API
-      setBusyTimes(busyTimes.filter((_, i) => i !== index));
+      await doctorApi.deleteBusyTime(busyTimeId, config);
+      const busyTimesResponse = await doctorApi.getBusyTimes(config);
+      setBusyTimes(busyTimesResponse.data || []);
       toast.success("Xóa thời gian bận thành công!");
     } catch (error) {
-      toast.error(error.response?.data?.message || "Không thể xóa thời gian bận!");
+      toast.error(error.message || "Không thể xóa thời gian bận!");
     }
+  };
+
+  const handleEditProfile = () => {
+    const doctorId = localStorage.getItem("doctorId") || location.state?.doctorId;
+    navigate("/doctor/profile", { state: { doctorId } });
   };
 
   if (loading) {
@@ -153,123 +187,126 @@ const DoctorDashboard = () => {
   }
 
   return (
-    <>
-      <Navbar />
-      <section className="section-container bg-hospital-60 py-16 min-h-screen">
-        <div className="max-w-5xl mx-auto">
-          {/* Header */}
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-3xl font-display font-bold text-hospital-700">
-              Bảng Điều Khiển Bác Sĩ
-            </h2>
-            <Button variant="destructive" onClick={handleLogout}>
-              <LogOut className="mr-2 h-4 w-4" /> Đăng xuất
-            </Button>
-          </div>
+    <section className="section-container bg-hospital-60 min-h-screen">
+      {/* Thanh điều hướng cố định */}
+      <nav className="fixed top-0 left-0 right-0 bg-white shadow-md z-10">
+        <div className="max-w-5xl mx-auto px-4 py-4 flex justify-between items-center">
+          <h2 className="text-2xl font-display font-bold text-hospital-700">
+            Bảng Điều Khiển Bác Sĩ
+          </h2>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleLogout}
+            className="text-red-600 border-red-600 hover:bg-red-50"
+          >
+            <LogOut className="mr-2 h-4 w-4" /> Đăng xuất
+          </Button>
+        </div>
+      </nav>
 
-          {/* Thông tin bác sĩ */}
-          {doctor && (
-            <div className="bg-white p-6 rounded-lg shadow-soft mb-8 flex items-center gap-6">
-              <img
-                src={doctor.image}
-                alt={doctor.name}
-                className="w-24 h-24 rounded-full object-cover"
-              />
-              <div>
-                <h3 className="text-2xl font-semibold text-hospital-700">{doctor.name}</h3>
-                <p className="text-gray-600">{doctor.title}</p>
-                <p className="text-gray-500 mt-2">{doctor.details}</p>
-                <Button
-                  variant="outline"
-                  className="mt-4"
-                  onClick={() => navigate("/doctor/profile")}
-                >
-                  Chỉnh sửa hồ sơ
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Form đánh dấu thời gian bận */}
-          <div className="bg-white p-6 rounded-lg shadow-soft mb-8">
-            <div className="flex items-center gap-2 mb-6">
-              <Clock className="h-6 w-6 text-hospital-700" />
-              <h3 className="text-xl font-semibold text-hospital-700">Đánh Dấu Thời Gian Bận</h3>
-            </div>
-            <form onSubmit={handleAddBusyTime} className="flex gap-4 items-center">
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Từ</label>
-                <Input
-                  type="datetime-local"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                  className="w-full"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Đến</label>
-                <Input
-                  type="datetime-local"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                  className="w-full"
-                />
-              </div>
-              <Button type="submit" className="mt-6">
-                Thêm
+      {/* Nội dung chính */}
+      <div className="max-w-5xl mx-auto pt-20 pb-16 px-4">
+        {/* Thông tin bác sĩ */}
+        {doctor && (
+          <div className="bg-white p-6 rounded-lg shadow-soft mb-8 flex items-center gap-6">
+            <img
+              src={doctor.avatar || "default-avatar.png"}
+              alt={doctor.name}
+              className="w-24 h-24 rounded-full object-cover"
+            />
+            <div>
+              <h3 className="text-2xl font-semibold text-hospital-700">{doctor.name}</h3>
+              <p className="text-gray-600">
+                Chuyên khoa: {doctor.specialty || "Chưa cập nhật"}
+              </p>
+              <p className="text-gray-600">Số điện thoại: {doctor.phone}</p>
+              <p className="text-gray-500 mt-2">Giới tính: {doctor.gender}</p>
+              <Button variant="outline" className="mt-4" onClick={handleEditProfile}>
+                Chỉnh sửa hồ sơ
               </Button>
-            </form>
-          </div>
-
-          {/* Danh sách thời gian bận */}
-          <div className="bg-white p-6 rounded-lg shadow-soft mb-8">
-            <div className="flex items-center gap-2 mb-6">
-              <Clock className="h-6 w-6 text-hospital-700" />
-              <h3 className="text-xl font-semibold text-hospital-700">Danh Sách Thời Gian Bận</h3>
-            </div>
-            <div className="space-y-4">
-              {busyTimes.length > 0 ? (
-                busyTimes.map((busyTime, index) => (
-                  <BusyTimeCard
-                    key={index}
-                    startTime={busyTime.startTime}
-                    endTime={busyTime.endTime}
-                    onDelete={() => handleDeleteBusyTime(index)}
-                  />
-                ))
-              ) : (
-                <p className="text-gray-500 text-center">Chưa có thời gian bận nào được đánh dấu.</p>
-              )}
             </div>
           </div>
+        )}
 
-          {/* Danh sách lịch hẹn */}
-          <div className="bg-white p-6 rounded-lg shadow-soft">
-            <div className="flex items-center gap-2 mb-6">
-              <Calendar className="h-6 w-6 text-hospital-700" />
-              <h3 className="text-xl font-semibold text-hospital-700">Lịch Hẹn Sắp Tới</h3>
+        {/* Form đánh dấu thời gian bận */}
+        <div className="bg-white p-6 rounded-lg shadow-soft mb-8">
+          <div className="flex items-center gap-2 mb-6">
+            <Clock className="h-6 w-6 text-hospital-700" />
+            <h3 className="text-xl font-semibold text-hospital-700">Đánh Dấu Thời Gian Bận</h3>
+          </div>
+          <form onSubmit={handleAddBusyTime} className="flex gap-4 items-center">
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Từ</label>
+              <Input
+                type="datetime-local"
+                value={startTime}
+                onChange={(e) => setStartTime(e.target.value)}
+                className="w-full"
+              />
             </div>
-            <div className="space-y-4">
-              {appointments.length > 0 ? (
-                appointments.map((appointment, index) => (
-                  <AppointmentCard
-                    key={index}
-                    patientName={appointment.patientName}
-                    time={appointment.time}
-                    status={appointment.status}
-                    onViewDetails={() => handleViewAppointmentDetails(appointment)}
-                    onChat={() => handleChat(appointment.patientName)}
-                  />
-                ))
-              ) : (
-                <p className="text-gray-500 text-center">Không có lịch hẹn nào.</p>
-              )}
+            <div className="flex-1">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Đến</label>
+              <Input
+                type="datetime-local"
+                value={endTime}
+                onChange={(e) => setEndTime(e.target.value)}
+                className="w-full"
+              />
             </div>
+            <Button type="submit" className="mt-6">
+              Thêm
+            </Button>
+          </form>
+        </div>
+
+        {/* Danh sách thời gian bận */}
+        <div className="bg-white p-6 rounded-lg shadow-soft mb-8">
+          <div className="flex items-center gap-2 mb-6">
+            <Clock className="h-6 w-6 text-hospital-700" />
+            <h3 className="text-xl font-semibold text-hospital-700">Danh Sách Thời Gian Bận</h3>
+          </div>
+          <div className="space-y-4">
+            {busyTimes.length > 0 ? (
+              busyTimes.map((busyTime) => (
+                <BusyTimeCard
+                  key={busyTime.id}
+                  startTime={busyTime.startTime}
+                  endTime={busyTime.endTime}
+                  onDelete={() => handleDeleteBusyTime(busyTime.id)}
+                />
+              ))
+            ) : (
+              <p className="text-gray-500 text-center">Chưa có thời gian bận nào được đánh dấu.</p>
+            )}
           </div>
         </div>
-      </section>
-      <Footer />
-    </>
+
+        {/* Danh sách lịch hẹn */}
+        <div className="bg-white p-6 rounded-lg shadow-soft">
+          <div className="flex items-center gap-2 mb-6">
+            <Calendar className="h-6 w-6 text-hospital-700" />
+            <h3 className="text-xl font-semibold text-hospital-700">Lịch Hẹn Sắp Tới</h3>
+          </div>
+          <div className="space-y-4">
+            {appointments.length > 0 ? (
+              appointments.map((appointment, index) => (
+                <AppointmentCard
+                  key={index}
+                  patientName={appointment.patientName}
+                  time={appointment.time}
+                  status={appointment.status}
+                  onViewDetails={() => handleViewAppointmentDetails(appointment)}
+                  onChat={() => handleChat(appointment.patientName)}
+                />
+              ))
+            ) : (
+              <p className="text-gray-500 text-center">Không có lịch hẹn nào.</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
   );
 };
 

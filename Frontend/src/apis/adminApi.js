@@ -198,7 +198,7 @@ export const adminApi = {
       const response = await api.get('/admin/appointments', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log('Raw appointments response:', response.data); // Debug dữ liệu thô
+      console.log('Raw appointments response:', response.data); 
       return response.data;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to fetch appointments');
@@ -209,7 +209,8 @@ export const adminApi = {
   createAppointment: async (appointmentData, token) => {
     console.log('Dữ liệu gửi đến API:', appointmentData);
     try {
-      const response = await api.post('/admin/appointments', appointmentData, { // Sửa URL thành /admin/appointments
+      const response = await api.post('/admin/appointments', appointmentData, 
+      { 
         headers: { Authorization: `Bearer ${token}` },
       });
       toast.success('Appointment created successfully');

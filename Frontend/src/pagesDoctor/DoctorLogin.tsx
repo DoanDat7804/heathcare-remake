@@ -1,3 +1,4 @@
+// DoctorLogin.jsx
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +12,7 @@ import { jwtDecode } from "jwt-decode";
 
 interface JwtPayload {
   email: string;
-  sub: string;
+  sub: string; // ID bác sĩ thường nằm ở đây
   role: string;
   iat: number;
   exp: number;
@@ -28,30 +29,28 @@ const DoctorLogin = () => {
     setIsLoading(true);
 
     try {
-      // Gọi API đăng nhập
       const response = await authApi.login(email, password);
-      console.log("Response từ authApi.login:", response); // Debug
+      console.log("Response từ authApi.login:", response);
 
-      // Giả định response chỉ trả về { access_token }
       const { access_token } = response;
-
       if (!access_token) {
         throw new Error("Không nhận được token từ server!");
       }
 
-      // Giải mã token để lấy thông tin payload
       const decodedToken = jwtDecode<JwtPayload>(access_token);
-      console.log("Decoded token:", decodedToken); // Debug
+      console.log("Decoded token:", decodedToken);
 
-      // Kiểm tra role từ token
       if (decodedToken.role !== "doctor") {
         throw new Error("Tài khoản này không phải bác sĩ!");
       }
 
-      // Lưu token vào localStorage
+      // Lưu token và ID bác sĩ vào localStorage
       localStorage.setItem("token", access_token);
+      localStorage.setItem("doctorId", decodedToken.sub); // Giả định sub là ID bác sĩ
+
       toast.success("Đăng nhập thành công!");
-      navigate("/doctor/dashboard");
+      // Chuyển hướng đến dashboard với ID bác sĩ
+      navigate("/doctor/dashboard", { state: { doctorId: decodedToken.sub } });
     } catch (error) {
       console.error("Lỗi đăng nhập:", error);
       toast.error(error.message || "Đăng nhập thất bại!");
