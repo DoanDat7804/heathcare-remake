@@ -4,7 +4,7 @@ import { Model } from 'mongoose';
 import { News } from './schemas/news.schema';
 import { CreateNewsDto } from './dto/create-news.dto';
 import { UpdateNewsDto } from './dto/update-news.dto';
-import * as mongoose from 'mongoose'; // Import mongoose
+import * as mongoose from 'mongoose';
 
 @Injectable()
 export class NewsService {
@@ -31,6 +31,8 @@ export class NewsService {
         role: author.role || 'author',
       },
     };
+
+    console.log('Dữ liệu trước khi lưu:', newsData); // Thêm log để kiểm tra
 
     const newNews = new this.newsModel(newsData);
     return newNews.save();

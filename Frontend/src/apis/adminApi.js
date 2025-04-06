@@ -135,29 +135,44 @@ export const adminApi = {
 
   createNews: async (newsData, token) => {
     try {
-      console.log('Dữ liệu gửi lên:', newsData);
+      console.log('Dữ liệu gửi lên:');
+      for (const pair of newsData.entries()) {
+        console.log(`${pair[0]}: ${pair[1]}`);
+      }
       const response = await api.post('/admin/news', newsData, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
       toast.success('News created successfully');
       return response.data;
     } catch (error) {
-      console.error('Lỗi từ server:', error.response?.data);
-      toast.error(error.response?.data?.message || 'Failed to create news');
+      if (error.code === 'ECONNREFUSED') {
+        console.error('Không thể kết nối đến server. Kiểm tra backend có chạy không.');
+        toast.error('Không thể kết nối đến server. Vui lòng kiểm tra backend.');
+      } else {
+        console.error('Lỗi từ server:', JSON.stringify(error.response?.data, null, 2));
+        toast.error(error.response?.data?.message || 'Failed to create news');
+      }
       throw error;
     }
   },
-
   updateNews: async (id, newsData, token) => {
     try {
-      console.log('Dữ liệu gửi đi:', newsData);
+      console.log('ID tin tức:', id);
+      console.log('Dữ liệu gửi đi:');
+      for (const pair of newsData.entries()) {
+        console.log(`${pair[0]}: ${pair[1]}`);
+      }
       const response = await api.patch(`/admin/news/${id}`, newsData, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
       toast.success('News updated successfully');
       return response.data;
     } catch (error) {
-      console.error('Chi tiết lỗi:', error.response?.data);
+      console.error('Chi tiết lỗi:', JSON.stringify(error.response?.data, null, 2));
       toast.error(error.response?.data?.message || 'Failed to update news');
       throw error;
     }
@@ -165,16 +180,18 @@ export const adminApi = {
 
   deleteNews: async (id, token) => {
     try {
-      await api.delete(`/admin/news/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
+      console.log('Gửi yêu cầu xóa với ID:', id); // Log để kiểm tra
+      const response = await api.delete(`/admin/news/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-      toast.success('News deleted successfully');
+      return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to delete news');
+      console.error('Chi tiết lỗi:', JSON.stringify(error.response?.data, null, 2));
       throw error;
     }
   },
-
   // Quản lý Appointments
   getAllAppointments: async (token) => {
     try {

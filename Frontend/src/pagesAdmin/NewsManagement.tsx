@@ -2,51 +2,49 @@ import React, { useState, useEffect } from 'react';
 import { adminApi } from '../apis/adminApi';
 import { toast } from 'react-toastify';
 
-interface Author {
-  id: string;
-  name: string;
-  role?: string;
-}
-
-interface News {
+interface NewsItem {
   _id: string;
   title: string;
   slug: string;
   summary: string;
-  content: string;
-  author: Author;
-  thumbnail?: string;
+  thumbnail: string;
+  date: string;
+  author: { id: string; name: string; role?: string; _id?: string };
+  content?: string;
   isPublished: boolean;
-  publishDate?: Date | string;
 }
 
 const NewsManagement: React.FC = () => {
-  const [news, setNews] = useState<News[]>([]);
+  const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [showAddForm, setShowAddForm] = useState<boolean>(false);
   const [showEditForm, setShowEditForm] = useState<boolean>(false);
-  const [newNews, setNewNews] = useState<News>({
+  const [newNews, setNewNews] = useState<NewsItem & { file?: File | null }>({
     _id: '',
     title: '',
     slug: '',
     summary: '',
-    content: '',
-    author: { id: '', name: '', role: 'author' },
     thumbnail: '',
+    date: '',
+    author: { id: 'default-id', name: '' },
+    content: '',
     isPublished: false,
-    publishDate: '',
+    file: null,
   });
-  const [editNews, setEditNews] = useState<News | null>(null);
+  const [editNews, setEditNews] = useState<NewsItem & { file?: File | null } | null>(null);
 
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        const data = await adminApi.getAllNews();
+        const token = localStorage.getItem('adminToken');
+        if (!token) {
+          throw new Error('Token không tồn tại. Vui lòng đăng nhập.');
+        }
+        const data = await adminApi.getAllNews(token);
         setNews(data || []);
       } catch (err: any) {
         const errorMessage = err.response?.data?.message || err.message || 'Không thể kết nối đến server';
-        console.error('Lỗi khi tải danh sách tin tức:', err);
         toast.error('Lỗi khi tải danh sách tin tức: ' + errorMessage);
         setNews([]);
       } finally {
@@ -59,110 +57,141 @@ const NewsManagement: React.FC = () => {
   const handleAddNews = async () => {
     if (
       !newNews.title ||
+      !newNews.slug ||
       !newNews.summary ||
       !newNews.content ||
-      !newNews.author.id ||
-      !newNews.author.name
+      !newNews.author.name ||
+      !newNews.author.id
     ) {
-      toast.error('Vui lòng điền đầy đủ các trường bắt buộc: tiêu đề, tóm tắt, nội dung, ID và tên tác giả');
+      toast.error(
+        'Vui lòng điền đầy đủ các trường bắt buộc: tiêu đề, slug, tóm tắt, nội dung, ID tác giả, tên tác giả'
+      );
       return;
     }
 
-    const newsData = {
-      title: newNews.title,
-      slug: newNews.slug || newNews.title.toLowerCase().replace(/ /g, '-'), // Tạo slug nếu không nhập
-      summary: newNews.summary,
-      content: newNews.content,
-      author: {
-        id: newNews.author.id,
-        name: newNews.author.name,
-        role: newNews.author.role || 'author', // Mặc định role
-      },
-      thumbnail: newNews.thumbnail || '',
-      isPublished: newNews.isPublished,
-      publishDate: newNews.publishDate ? new Date(newNews.publishDate).toISOString() : new Date().toISOString(),
-    };
+    const formData = new FormData();
+    formData.append('title', newNews.title);
+    formData.append('slug', newNews.slug);
+    formData.append('summary', newNews.summary);
+    formData.append('content', newNews.content);
+    formData.append('author', JSON.stringify(newNews.author));
+    formData.append('isPublished', String(newNews.isPublished));
+    formData.append(
+      'publishDate',
+      newNews.date ? new Date(newNews.date).toISOString() : new Date().toISOString()
+    );
+    if (newNews.file) {
+      formData.append('thumbnail', newNews.file);
+    }
 
     try {
-      console.log('Dữ liệu gửi đi (POST):', newsData); // Log để debug
-      await adminApi.createNews(newsData);
-      const data = await adminApi.getAllNews();
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        throw new Error('Token không tồn tại. Vui lòng đăng nhập.');
+      }
+      await adminApi.createNews(formData, token);
+      const data = await adminApi.getAllNews(token);
       setNews(data || []);
       setNewNews({
         _id: '',
         title: '',
         slug: '',
         summary: '',
-        content: '',
-        author: { id: '', name: '', role: 'author' },
         thumbnail: '',
+        date: '',
+        author: { id: 'default-id', name: '' },
+        content: '',
         isPublished: false,
-        publishDate: '',
+        file: null,
       });
       setShowAddForm(false);
       toast.success('Thêm tin tức thành công!');
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Không thể kết nối đến server';
-      console.error('Lỗi từ server (POST):', err);
       toast.error('Lỗi khi thêm tin tức: ' + errorMessage);
     }
   };
 
-  const handleDeleteNews = async (id: string) => {
-    if (window.confirm('Bạn có chắc muốn xóa tin tức này?')) {
-      try {
-        await adminApi.deleteNews(id);
-        setNews(news.filter((item) => item._id !== id));
-        toast.success('Xóa tin tức thành công!');
-      } catch (err: any) {
-        const errorMessage = err.response?.data?.message || err.message || 'Không thể kết nối đến server';
-        toast.error('Lỗi khi xóa tin tức: ' + errorMessage);
-      }
-    }
-  };
-
-  const handleEditNews = (newsItem: News) => {
-    setEditNews(newsItem);
-    setShowEditForm(true);
-  };
-
   const handleUpdateNews = async () => {
-    if (!editNews) return;
-    if (!editNews.title || !editNews.summary || !editNews.content) {
-      toast.error('Vui lòng điền đầy đủ các trường bắt buộc: tiêu đề, tóm tắt, nội dung');
+    if (!editNews || !editNews._id) {
+      toast.error('Không có tin tức để cập nhật hoặc ID không hợp lệ');
       return;
     }
-  
-    const updateData = {
-      title: editNews.title,
-      slug: editNews.slug,
-      summary: editNews.summary,
-      content: editNews.content,
-      author: editNews.author, // Thêm author từ editNews
-      thumbnail: editNews.thumbnail,
-      isPublished: editNews.isPublished,
-      publishDate: editNews.publishDate ? new Date(editNews.publishDate).toISOString() : undefined,
-    };
-  
+    if (!editNews.title || !editNews.slug || !editNews.summary || !editNews.content) {
+      toast.error('Vui lòng điền đầy đủ các trường bắt buộc: tiêu đề, slug, tóm tắt, nội dung');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('title', editNews.title);
+    const originalNews = news.find((item) => item._id === editNews._id);
+    if (editNews.slug !== originalNews?.slug) {
+      formData.append('slug', editNews.slug);
+    }
+    formData.append('summary', editNews.summary);
+    formData.append('content', editNews.content);
+    formData.append('author', JSON.stringify(editNews.author));
+    formData.append('isPublished', String(editNews.isPublished));
+    if (editNews.date) {
+      formData.append('publishDate', new Date(editNews.date).toISOString());
+    }
+    if (editNews.file) {
+      formData.append('thumbnail', editNews.file);
+    }
+
     try {
-      console.log('Dữ liệu gửi đi (PATCH):', updateData); // Log để debug
-      await adminApi.updateNews(editNews._id, updateData);
-      const data = await adminApi.getAllNews();
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        throw new Error('Token không tồn tại. Vui lòng đăng nhập.');
+      }
+      await adminApi.updateNews(editNews._id, formData, token);
+      const data = await adminApi.getAllNews(token);
       setNews(data || []);
       setShowEditForm(false);
       setEditNews(null);
       toast.success('Cập nhật tin tức thành công!');
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Không thể kết nối đến server';
-      console.error('Lỗi từ server (PATCH):', err.response?.data); // Log chi tiết
       toast.error('Lỗi khi cập nhật tin tức: ' + errorMessage);
+    }
+  };
+
+  const handleEditNews = (newsItem: NewsItem) => {
+    setEditNews({ ...newsItem, file: null });
+    setShowEditForm(true);
+  };
+
+  const handleDeleteNews = async (id: string) => {
+    if (!id || !confirm('Bạn có chắc chắn muốn xóa tin tức này không?')) {
+      toast.error('ID tin tức không hợp lệ hoặc hành động bị hủy');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('adminToken');
+      if (!token) {
+        throw new Error('Token không tồn tại. Vui lòng đăng nhập.');
+      }
+      await adminApi.deleteNews(id, token);
+      const data = await adminApi.getAllNews(token);
+      setNews(data || []);
+      toast.success('Xóa tin tức thành công!');
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'Không thể xóa tin tức';
+      toast.error('Lỗi khi xóa tin tức: ' + errorMessage);
     }
   };
 
   if (loading) return <div>Đang tải...</div>;
 
+  // Logic tìm kiếm theo tiêu đề, tên tác giả và ID tác giả
   const filteredNews = Array.isArray(news)
-    ? news.filter((item) => item.title.toLowerCase().includes(searchTerm.toLowerCase()))
+    ? news.filter(
+        (item) =>
+          item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.author.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          item.author.id.toLowerCase().includes(searchTerm.toLowerCase())
+      )
     : [];
 
   return (
@@ -172,7 +201,7 @@ const NewsManagement: React.FC = () => {
         <div className="flex justify-between mb-4">
           <input
             type="text"
-            placeholder="Tìm kiếm theo tiêu đề..."
+            placeholder="Tìm kiếm theo tiêu đề, tên tác giả, ID tác giả..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="border p-2 rounded w-1/3"
@@ -196,7 +225,7 @@ const NewsManagement: React.FC = () => {
             />
             <input
               type="text"
-              placeholder="Slug * (để trống sẽ tự tạo)"
+              placeholder="Slug *"
               value={newNews.slug}
               onChange={(e) => setNewNews({ ...newNews, slug: e.target.value })}
               className="border p-2 rounded mb-2 w-full"
@@ -232,19 +261,15 @@ const NewsManagement: React.FC = () => {
               className="border p-2 rounded mb-2 w-full"
             />
             <input
-              type="text"
-              placeholder="Vai trò tác giả (mặc định: author)"
-              value={newNews.author.role}
-              onChange={(e) =>
-                setNewNews({ ...newNews, author: { ...newNews.author, role: e.target.value } })
-              }
+              type="file"
+              accept="image/*"
+              onChange={(e) => setNewNews({ ...newNews, file: e.target.files?.[0] || null })}
               className="border p-2 rounded mb-2 w-full"
             />
             <input
-              type="text"
-              placeholder="Thumbnail URL"
-              value={newNews.thumbnail}
-              onChange={(e) => setNewNews({ ...newNews, thumbnail: e.target.value })}
+              type="date"
+              value={newNews.date || ''}
+              onChange={(e) => setNewNews({ ...newNews, date: e.target.value })}
               className="border p-2 rounded mb-2 w-full"
             />
             <label className="flex items-center mb-2">
@@ -255,16 +280,6 @@ const NewsManagement: React.FC = () => {
               />
               <span className="ml-2">Công khai</span>
             </label>
-            <input
-              type="date"
-              value={
-                newNews.publishDate instanceof Date
-                  ? newNews.publishDate.toISOString().split('T')[0]
-                  : newNews.publishDate || ''
-              }
-              onChange={(e) => setNewNews({ ...newNews, publishDate: e.target.value })}
-              className="border p-2 rounded mb-2 w-full"
-            />
             <button
               onClick={handleAddNews}
               className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
@@ -310,9 +325,37 @@ const NewsManagement: React.FC = () => {
             />
             <input
               type="text"
-              placeholder="Thumbnail URL"
-              value={editNews.thumbnail}
-              onChange={(e) => setEditNews({ ...editNews, thumbnail: e.target.value })}
+              placeholder="ID tác giả *"
+              value={editNews.author.id}
+              onChange={(e) =>
+                setEditNews({ ...editNews, author: { ...editNews.author, id: e.target.value } })
+              }
+              className="border p-2 rounded mb-2 w-full"
+            />
+            <input
+              type="text"
+              placeholder="Tên tác giả *"
+              value={editNews.author.name}
+              onChange={(e) =>
+                setEditNews({ ...editNews, author: { ...editNews.author, name: e.target.value } })
+              }
+              className="border p-2 rounded mb-2 w-full"
+            />
+            <div className="mb-2">
+              {editNews.thumbnail && (
+                <img src={editNews.thumbnail} alt="Current" className="h-20 w-auto mb-2" />
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setEditNews({ ...editNews, file: e.target.files?.[0] || null })}
+                className="border p-2 rounded w-full"
+              />
+            </div>
+            <input
+              type="date"
+              value={editNews.date || ''}
+              onChange={(e) => setEditNews({ ...editNews, date: e.target.value })}
               className="border p-2 rounded mb-2 w-full"
             />
             <label className="flex items-center mb-2">
@@ -338,24 +381,35 @@ const NewsManagement: React.FC = () => {
           </div>
         )}
 
+        {/* Bảng danh sách tin tức */}
         <table className="w-full">
           <thead>
             <tr className="bg-gray-50">
+              <th className="p-3 text-left">ID Tin Tức</th>
               <th className="p-3 text-left">Tiêu đề</th>
               <th className="p-3 text-left">Tác giả</th>
+              <th className="p-3 text-left">ID Tác Giả</th>
               <th className="p-3 text-left">Hành động</th>
             </tr>
           </thead>
           <tbody>
             {filteredNews.map((item) => (
               <tr key={item._id} className="border-t">
+                <td className="p-3">{item._id}</td>
                 <td className="p-3">{item.title}</td>
                 <td className="p-3">{item.author.name}</td>
+                <td className="p-3">{item.author.id}</td>
                 <td className="p-3">
-                  <button onClick={() => handleEditNews(item)} className="text-blue-600 mr-2">
+                  <button
+                    onClick={() => handleEditNews(item)}
+                    className="text-blue-600 mr-2 hover:underline"
+                  >
                     Sửa
                   </button>
-                  <button onClick={() => handleDeleteNews(item._id)} className="text-red-600">
+                  <button
+                    onClick={() => handleDeleteNews(item._id)}
+                    className="text-red-600 hover:underline"
+                  >
                     Xóa
                   </button>
                 </td>
