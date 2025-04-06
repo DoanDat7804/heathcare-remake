@@ -1,6 +1,11 @@
 import { IsOptional, IsString, IsDateString, IsEnum, IsNumber, IsBoolean } from 'class-validator';
 
 export class UpdateAppointmentDto {
+
+  @IsOptional()
+  @IsString()
+  doctorId?: string; // Thêm trường doctorId
+  
   @IsOptional()
   @IsString()
   serviceType?: string;

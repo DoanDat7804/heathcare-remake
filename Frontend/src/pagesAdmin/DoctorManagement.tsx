@@ -14,6 +14,8 @@ interface Doctor {
   isActive?: boolean;
 }
 
+const ITEMS_PER_PAGE = 5; // Số lượng bác sĩ mỗi trang
+
 const DoctorManagement: React.FC = () => {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -28,10 +30,11 @@ const DoctorManagement: React.FC = () => {
     phone: '',
     specialty: 'Đa Khoa',
     gender: 'Nam',
-    role: 'doctor', // Role mặc định là 'doctor'
+    role: 'doctor',
   });
   const [editDoctor, setEditDoctor] = useState<Doctor | null>(null);
   const [isDuplicate, setIsDuplicate] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState<number>(1); // State để theo dõi trang hiện tại
 
   const token = 'your-jwt-token'; // Thay bằng token thực tế
 
@@ -99,7 +102,7 @@ const DoctorManagement: React.FC = () => {
         phone: newDoctor.phone,
         specialty: newDoctor.specialty,
         gender: newDoctor.gender,
-        role: 'doctor', // Cố định role là 'doctor'
+        role: 'doctor',
       };
       console.log('Dữ liệu gửi đi (POST):', doctorData);
       const createdDoctor = await adminApi.createDoctor(doctorData, token);
@@ -112,10 +115,13 @@ const DoctorManagement: React.FC = () => {
         phone: '',
         specialty: 'Đa Khoa',
         gender: 'Nam',
-        role: 'doctor', // Role mặc định là 'doctor'
+        role: 'doctor',
       });
       setShowAddForm(false);
       toast.success('Thêm bác sĩ thành công!');
+      // Chuyển đến trang cuối cùng sau khi thêm bác sĩ mới
+      const totalPages = Math.ceil((doctors.length + 1) / ITEMS_PER_PAGE);
+      setCurrentPage(totalPages);
     } catch (err: any) {
       const errorMessage = err.response?.data?.message || err.message || 'Không thể kết nối đến server';
       console.error('Lỗi từ server (POST):', err);
@@ -148,7 +154,7 @@ const DoctorManagement: React.FC = () => {
         phone: editDoctor.phone,
         specialty: editDoctor.specialty,
         gender: editDoctor.gender,
-        role: 'doctor', // Cố định role là 'doctor' khi chỉnh sửa
+        role: 'doctor',
         ...(editDoctor.password ? { password: editDoctor.password } : {}),
       };
       console.log('Dữ liệu gửi đi (PATCH):', doctorData);
@@ -173,6 +179,12 @@ const DoctorManagement: React.FC = () => {
         const data = await adminApi.getAllDoctors(token);
         setDoctors(data || []);
         toast.success('Xóa bác sĩ thành công!');
+        // Nếu xóa bác sĩ làm số lượng trên trang hiện tại không đủ, chuyển về trang trước
+        const filtered = filteredDoctors.filter(doctor => doctor._id !== id);
+        const totalPagesAfterDelete = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+        if (currentPage > totalPagesAfterDelete && totalPagesAfterDelete > 0) {
+          setCurrentPage(totalPagesAfterDelete);
+        }
       } catch (err: any) {
         const errorMessage = err.response?.data?.message || err.message || 'Không thể kết nối đến server';
         console.error('Lỗi từ server (DELETE):', err);
@@ -198,6 +210,20 @@ const DoctorManagement: React.FC = () => {
         );
       })
     : [];
+
+  // Tính toán phân trang
+  const totalItems = filteredDoctors.length;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentDoctors = filteredDoctors.slice(startIndex, endIndex);
+
+  // Hàm chuyển trang
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
 
   return (
     <div>
@@ -278,7 +304,6 @@ const DoctorManagement: React.FC = () => {
               <option value="Nữ">Nữ</option>
               <option value="Khác">Khác</option>
             </select>
-            {/* Xóa trường chọn role */}
             <button
               onClick={handleAddDoctor}
               className={`bg-green-600 text-white px-4 py-2 rounded ${
@@ -363,7 +388,6 @@ const DoctorManagement: React.FC = () => {
               <option value="Nữ">Nữ</option>
               <option value="Khác">Khác</option>
             </select>
-            {/* Xóa trường chọn role */}
             <button
               onClick={handleEditDoctor}
               className={`bg-green-600 text-white px-4 py-2 rounded ${
@@ -397,7 +421,7 @@ const DoctorManagement: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredDoctors.map((doctor) => (
+            {currentDoctors.map((doctor) => (
               <tr key={doctor._id} className="border-t">
                 <td className="p-3">{doctor._id}</td>
                 <td className="p-3">{doctor.name}</td>
@@ -429,6 +453,40 @@ const DoctorManagement: React.FC = () => {
             ))}
           </tbody>
         </table>
+
+        {/* Phân trang */}
+        {totalItems > 0 && (
+          <div className="flex justify-between items-center mt-4">
+            <div className="text-sm text-gray-600">
+              Hiển thị {startIndex + 1} - {Math.min(endIndex, totalItems)} trong tổng số {totalItems} bác sĩ
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className={`px-3 py-1 rounded ${currentPage === 1 ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+              >
+                Trước
+              </button>
+              {Array.from({ length: totalPages }, (_, index) => index + 1).map(page => (
+                <button
+                  key={page}
+                  onClick={() => goToPage(page)}
+                  className={`px-3 py-1 rounded ${currentPage === page ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                >
+                  {page}
+                </button>
+              ))}
+              <button
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className={`px-3 py-1 rounded ${currentPage === totalPages ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+              >
+                Sau
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,10 +1,11 @@
-// // src/appointments/appointments.service.ts
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Appointment } from './schemas/appointment.schema';
 import { User } from '../users/schemas/user.schema';
 import { Doctor } from '../doctors/schemas/doctor.schema';
+import { CreateAppointmentDto } from './dto/create-appointment.dto';
+import { UpdateAppointmentDto } from './dto/update-appointment.dto';
 
 @Injectable()
 export class AppointmentsService {
@@ -14,9 +15,10 @@ export class AppointmentsService {
     @InjectModel('Doctor') private doctorModel: Model<Doctor>,
   ) {}
 
-  // Phương thức hiện có: tạo lịch hẹn
-  async create(appointmentDto: any, user: any) {
-    if (user.role !== 'patient') throw new ForbiddenException('Chỉ bệnh nhân mới đặt được lịch hẹn');
+  async create(appointmentDto: CreateAppointmentDto, user: any) {
+    if (user.role !== 'patient') {
+      throw new ForbiddenException('Chỉ bệnh nhân mới đặt được lịch hẹn');
+    }
     const appointment = new this.appointmentModel({
       ...appointmentDto,
       patientId: user.userId,
@@ -29,41 +31,105 @@ export class AppointmentsService {
     return savedAppointment;
   }
 
-  // Phương thức hiện có: lấy lịch hẹn của patient
+  async createAdmin(createAppointmentDto: CreateAppointmentDto) {
+    const appointment = new this.appointmentModel({
+      ...createAppointmentDto,
+      status: 'pending',
+      symptoms: createAppointmentDto.symptoms || [],
+    });
+    const savedAppointment = await appointment.save();
+
+    await this.userModel.findByIdAndUpdate(createAppointmentDto.patientId, { $push: { appointments: savedAppointment._id } });
+    await this.doctorModel.findByIdAndUpdate(createAppointmentDto.doctorId, { $push: { appointments: savedAppointment._id } });
+
+    return savedAppointment;
+  }
+
   async findByPatient(userId: string) {
-    return this.appointmentModel.find({ patientId: userId }).populate('doctorId', 'name specialty');
+    return this.appointmentModel.find({ patientId: userId }).populate('doctorId', 'name specialty').exec();
   }
 
-  // Phương thức hiện có: lấy lịch hẹn của doctor
   async findByDoctor(doctorId: string) {
-    return this.appointmentModel.find({ doctorId }).populate('patientId', 'name');
+    return this.appointmentModel.find({ doctorId }).populate('patientId', 'name').exec();
   }
 
-  // Phương thức hiện có: xác nhận lịch hẹn
   async confirm(id: string, user: any) {
-    if (user.role !== 'doctor') throw new ForbiddenException('Chỉ bác sĩ mới xác nhận được lịch hẹn');
-    return this.appointmentModel.findOneAndUpdate(
+    if (user.role !== 'doctor') {
+      throw new ForbiddenException('Chỉ bác sĩ mới xác nhận được lịch hẹn');
+    }
+    const updatedAppointment = await this.appointmentModel.findOneAndUpdate(
       { _id: id, doctorId: user.userId },
       { status: 'confirmed', confirmationDate: new Date() },
       { new: true },
-    );
+    ).exec();
+
+    if (!updatedAppointment) {
+      throw new NotFoundException(`Không tìm thấy lịch hẹn với ID ${id} hoặc bạn không có quyền xác nhận`);
+    }
+    return updatedAppointment;
   }
 
-  // Phương thức mới: lấy tất cả lịch hẹn (cho admin)
   async findAll() {
-    return this.appointmentModel
+    const appointments = await this.appointmentModel
       .find()
       .populate('patientId', 'name')
-      .populate('doctorId', 'name specialty');
+      .populate('doctorId', 'name specialty')
+      .exec();
+    console.log('Appointments from DB:', appointments); // Debug dữ liệu trả về
+    return appointments;
   }
 
-  // Phương thức mới: cập nhật lịch hẹn (cho admin)
-  async update(id: string, updateAppointmentDto: any) {
-    return this.appointmentModel.findByIdAndUpdate(id, updateAppointmentDto, { new: true });
+  async update(id: string, updateAppointmentDto: UpdateAppointmentDto) {
+    console.log('Dữ liệu cập nhật nhận được:', updateAppointmentDto); // Debug dữ liệu nhận vào
+
+    const existingAppointment = await this.appointmentModel.findById(id).exec();
+    if (!existingAppointment) {
+      throw new NotFoundException(`Không tìm thấy lịch hẹn với ID ${id}`);
+    }
+
+    // Cập nhật lịch hẹn
+    const updatedAppointment = await this.appointmentModel.findByIdAndUpdate(
+      id,
+      updateAppointmentDto,
+      { new: true }
+    ).exec();
+
+    // Nếu doctorId thay đổi, cập nhật danh sách lịch hẹn trong doctorModel
+    if (updateAppointmentDto.doctorId && updateAppointmentDto.doctorId !== existingAppointment.doctorId.toString()) {
+      // Xóa lịch hẹn khỏi bác sĩ cũ
+      await this.doctorModel.findByIdAndUpdate(existingAppointment.doctorId, {
+        $pull: { appointments: id },
+      }).exec();
+
+      // Thêm lịch hẹn vào bác sĩ mới
+      await this.doctorModel.findByIdAndUpdate(updateAppointmentDto.doctorId, {
+        $push: { appointments: id },
+      }).exec();
+    }
+
+    return updatedAppointment;
   }
 
-  // Phương thức mới: xóa lịch hẹn (cho admin)
   async remove(id: string) {
-    return this.appointmentModel.findByIdAndDelete(id);
+    const appointment = await this.appointmentModel.findById(id).exec();
+    if (!appointment) {
+      throw new NotFoundException(`Không tìm thấy lịch hẹn với ID ${id}`);
+    }
+
+    // Xóa lịch hẹn khỏi user và doctor
+    await this.userModel.findByIdAndUpdate(appointment.patientId, { $pull: { appointments: id } }).exec();
+    await this.doctorModel.findByIdAndUpdate(appointment.doctorId, { $pull: { appointments: id } }).exec();
+
+    return this.appointmentModel.findByIdAndDelete(id).exec();
+  }
+
+  async getAllDoctors() {
+    const doctors = await this.doctorModel.find().select('name _id specialty').exec();
+    console.log('Doctors from DB:', doctors); // Debug dữ liệu bác sĩ
+    return doctors;
+  }
+
+  async getAllUsers() {
+    return this.userModel.find({ role: 'patient' }).select('name _id').exec();
   }
 }

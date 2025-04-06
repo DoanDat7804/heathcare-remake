@@ -6,7 +6,7 @@ interface User {
   _id: string;
   name: string;
   email: string;
-  password?: string; // Password không cần hiển thị trong bảng
+  password?: string;
   phone: string;
   role: string;
   gender: string;
@@ -103,6 +103,8 @@ const UserForm: React.FC<{
   </div>
 );
 
+const ITEMS_PER_PAGE = 5; // Số lượng người dùng mỗi trang
+
 const UserManagement: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -121,13 +123,14 @@ const UserManagement: React.FC = () => {
   });
   const [editUser, setEditUser] = useState<User | null>(null);
   const [isDuplicate, setIsDuplicate] = useState<boolean>(false);
+  const [currentPage, setCurrentPage] = useState<number>(1); // State để theo dõi trang hiện tại
 
   const token = 'your-jwt-token'; // Thay bằng token thực tế từ hệ thống xác thực
 
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const data = await adminApi.getAllUsers(token); // Thêm token
+        const data = await adminApi.getAllUsers(token);
         const normalizedData = data.map((user: any) => ({
           _id: user._id,
           name: user.name || '',
@@ -178,10 +181,9 @@ const UserManagement: React.FC = () => {
       return;
     }
     if (userData.gender === 'Giới tính') delete userData.gender;
-    console.log('Dữ liệu gửi lên server:', userData);
     try {
-      const createdUser = await adminApi.createUser(userData, token); // Thêm token
-      setUsers([...users, createdUser]); // Thêm người dùng mới vào danh sách
+      const createdUser = await adminApi.createUser(userData, token);
+      setUsers([...users, createdUser]);
       setNewUser({
         _id: '',
         name: '',
@@ -194,6 +196,9 @@ const UserManagement: React.FC = () => {
       });
       setShowAddForm(false);
       toast.success('Thêm người dùng thành công!');
+      // Chuyển đến trang cuối cùng sau khi thêm người dùng mới
+      const totalPages = Math.ceil((users.length + 1) / ITEMS_PER_PAGE);
+      setCurrentPage(totalPages);
     } catch (err: any) {
       console.error('Lỗi từ server (chi tiết):', JSON.stringify(err.response?.data, null, 2));
       toast.error(err.response?.data?.message?.message?.join(', ') || err.response?.data?.message || 'Lỗi khi thêm người dùng');
@@ -222,8 +227,8 @@ const UserManagement: React.FC = () => {
       return;
     }
     try {
-      await adminApi.updateUser(editUser._id, userData, token); // Thêm token
-      const data = await adminApi.getAllUsers(token); // Thêm token
+      await adminApi.updateUser(editUser._id, userData, token);
+      const data = await adminApi.getAllUsers(token);
       const normalizedData = data.map((user: any) => ({
         _id: user._id,
         name: user.name || '',
@@ -249,9 +254,15 @@ const UserManagement: React.FC = () => {
   const handleDeleteUser = async (id: string) => {
     if (window.confirm('Bạn có chắc muốn xóa người dùng này?')) {
       try {
-        await adminApi.deleteUser(id, token); // Thêm token
+        await adminApi.deleteUser(id, token);
         setUsers((prev) => prev.filter((user) => user._id !== id));
         toast.success('Xóa người dùng thành công!');
+        // Nếu xóa người dùng làm số lượng trên trang hiện tại không đủ, chuyển về trang trước
+        const filtered = filteredUsers.filter(user => user._id !== id);
+        const totalPagesAfterDelete = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+        if (currentPage > totalPagesAfterDelete && totalPagesAfterDelete > 0) {
+          setCurrentPage(totalPagesAfterDelete);
+        }
       } catch (err: any) {
         toast.error('Lỗi khi xóa người dùng: ' + err.message);
       }
@@ -273,6 +284,20 @@ const UserManagement: React.FC = () => {
       statusText.toLowerCase().includes(searchLower)
     );
   });
+
+  // Tính toán phân trang
+  const totalItems = filteredUsers.length;
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentUsers = filteredUsers.slice(startIndex, endIndex);
+
+  // Hàm chuyển trang
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
 
   return (
     <div>
@@ -318,7 +343,7 @@ const UserManagement: React.FC = () => {
         <table className="w-full">
           <thead>
             <tr className="bg-gray-50">
-              <th className="p-3 text-left">ID</th> {/* Thêm cột ID */}
+              <th className="p-3 text-left">ID</th>
               <th className="p-3 text-left">Tên</th>
               <th className="p-3 text-left">Email</th>
               <th className="p-3 text-left">SĐT</th>
@@ -330,9 +355,9 @@ const UserManagement: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {filteredUsers.map((user) => (
+            {currentUsers.map((user) => (
               <tr key={user._id} className="border-t">
-                <td className="p-3">{user._id}</td> {/* Hiển thị ID */}
+                <td className="p-3">{user._id}</td>
                 <td className="p-3">{user.name}</td>
                 <td className="p-3">{user.email}</td>
                 <td className="p-3">{user.phone}</td>
@@ -362,6 +387,40 @@ const UserManagement: React.FC = () => {
             ))}
           </tbody>
         </table>
+
+        {/* Phân trang */}
+        {totalItems > 0 && (
+          <div className="flex justify-between items-center mt-4">
+            <div className="text-sm text-gray-600">
+              Hiển thị {startIndex + 1} - {Math.min(endIndex, totalItems)} trong tổng số {totalItems} người dùng
+            </div>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className={`px-3 py-1 rounded ${currentPage === 1 ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+              >
+                Trước
+              </button>
+              {Array.from({ length: totalPages }, (_, index) => index + 1).map(page => (
+                <button
+                  key={page}
+                  onClick={() => goToPage(page)}
+                  className={`px-3 py-1 rounded ${currentPage === page ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'}`}
+                >
+                  {page}
+                </button>
+              ))}
+              <button
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className={`px-3 py-1 rounded ${currentPage === totalPages ? 'bg-gray-300 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+              >
+                Sau
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,22 +1,26 @@
 import api from './index';
 import { toast } from 'react-toastify';
 
-
 export const adminApi = {
   // Quản lý Users
-  getAllUsers: async () => {
+  getAllUsers: async (token) => {
     try {
-      const response = await api.get('/admin/users');
-      return response.data; // Trả về dữ liệu từ response
+      const response = await api.get('/admin/users', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to fetch users');
-      throw error; // Ném lỗi để component gọi hàm xử lý tiếp
+      throw error;
     }
   },
-  createUser: async (userData) => {
+
+  createUser: async (userData, token) => {
     console.log('Dữ liệu gửi đến API:', userData);
     try {
-      const response = await api.post('/admin/users', userData);
+      const response = await api.post('/admin/users', userData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       toast.success('User created successfully');
       return response.data;
     } catch (error) {
@@ -25,7 +29,8 @@ export const adminApi = {
       throw error;
     }
   },
-  updateUser: async (id, userData) => {
+
+  updateUser: async (id, userData, token) => {
     try {
       const payload = {
         name: userData.name,
@@ -37,7 +42,9 @@ export const adminApi = {
         address: userData.address,
       };
       console.log('Dữ liệu gửi đi:', payload);
-      const response = await api.patch(`/admin/users/${id}`, payload);
+      const response = await api.patch(`/admin/users/${id}`, payload, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       toast.success('User updated successfully');
       return response.data;
     } catch (error) {
@@ -46,9 +53,12 @@ export const adminApi = {
       throw error;
     }
   },
-  deleteUser: async (id) => {
+
+  deleteUser: async (id, token) => {
     try {
-      await api.delete(`/admin/users/${id}`);
+      await api.delete(`/admin/users/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       toast.success('User deleted successfully');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to delete user');
@@ -57,18 +67,24 @@ export const adminApi = {
   },
 
   // Quản lý Doctors
-  getAllDoctors: async () => {
+  getAllDoctors: async (token) => {
     try {
-      const response = await api.get('/admin/doctors');
+      const response = await api.get('/admin/doctors', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      console.log('Raw doctors data from API:', response.data); // Thêm log để kiểm tra
       return response.data;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to fetch doctors');
       throw error;
     }
   },
-  createDoctor: async (doctorData) => {
+
+  createDoctor: async (doctorData, token) => {
     try {
-      const response = await api.post('/admin/doctors', doctorData);
+      const response = await api.post('/admin/doctors', doctorData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       toast.success('Doctor created successfully');
       return response.data;
     } catch (error) {
@@ -76,9 +92,12 @@ export const adminApi = {
       throw error;
     }
   },
-  updateDoctor: async (id, doctorData) => {
+
+  updateDoctor: async (id, doctorData, token) => {
     try {
-      const response = await api.patch(`/admin/doctors/${id}`, doctorData);
+      const response = await api.patch(`/admin/doctors/${id}`, doctorData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       toast.success('Doctor updated successfully');
       return response.data;
     } catch (error) {
@@ -86,55 +105,69 @@ export const adminApi = {
       throw error;
     }
   },
-  deleteDoctor: async (id) => {
+
+  deleteDoctor: async (id, token) => {
     try {
-      await api.delete(`/admin/doctors/${id}`);
+      await api.delete(`/admin/doctors/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       toast.success('Doctor deleted successfully');
-      return { success: true }; // Trả về kết quả thành công
+      return { success: true };
     } catch (error) {
       const errorMessage = error.response?.data?.message || 'Failed to delete doctor';
       toast.error(errorMessage);
-      return { success: false, error: error.response?.data || error }; // Trả về lỗi chi tiết
+      return { success: false, error: error.response?.data || error };
     }
   },
 
   // Quản lý News
-  getAllNews: async () => {
+  getAllNews: async (token) => {
     try {
-      const response = await api.get('/admin/news');
+      const response = await api.get('/admin/news', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       return response.data;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to fetch news');
       throw error;
     }
   },
-  createNews: async (newsData) => {
+
+  createNews: async (newsData, token) => {
     try {
-      console.log('Dữ liệu gửi lên:', newsData); // Debug
-      const response = await api.post('/admin/news', newsData);
+      console.log('Dữ liệu gửi lên:', newsData);
+      const response = await api.post('/admin/news', newsData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       toast.success('News created successfully');
       return response.data;
     } catch (error) {
-      console.error('Lỗi từ server:', error.response?.data); // Debug chi tiết
+      console.error('Lỗi từ server:', error.response?.data);
       toast.error(error.response?.data?.message || 'Failed to create news');
       throw error;
     }
   },
-  updateNews: async (id, newsData) => {
+
+  updateNews: async (id, newsData, token) => {
     try {
-      console.log('Dữ liệu gửi đi:', newsData); // Debug
-      const response = await api.patch(`/admin/news/${id}`, newsData);
+      console.log('Dữ liệu gửi đi:', newsData);
+      const response = await api.patch(`/admin/news/${id}`, newsData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       toast.success('News updated successfully');
       return response.data;
     } catch (error) {
-      console.error('Chi tiết lỗi:', error.response?.data); // Log chi tiết
+      console.error('Chi tiết lỗi:', error.response?.data);
       toast.error(error.response?.data?.message || 'Failed to update news');
       throw error;
     }
   },
-  deleteNews: async (id) => {
+
+  deleteNews: async (id, token) => {
     try {
-      await api.delete(`/admin/news/${id}`);
+      await api.delete(`/admin/news/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       toast.success('News deleted successfully');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to delete news');
@@ -142,33 +175,61 @@ export const adminApi = {
     }
   },
 
-  // Quản lý Appointments (thêm mới)
-  getAllAppointments: async () => {
+  // Quản lý Appointments
+  getAllAppointments: async (token) => {
     try {
-      const response = await api.get('/admin/appointments');
+      const response = await api.get('/admin/appointments', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      console.log('Raw appointments response:', response.data); // Debug dữ liệu thô
       return response.data;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to fetch appointments');
       throw error;
     }
   },
-  updateAppointment: async (id, appointmentData) => {
+
+  createAppointment: async (appointmentData, token) => {
+    console.log('Dữ liệu gửi đến API:', appointmentData);
     try {
-      const response = await api.patch(`/admin/appointments/${id}`, appointmentData);
-      toast.success('Appointment updated successfully');
+      const response = await api.post('/admin/appointments', appointmentData, { // Sửa URL thành /admin/appointments
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast.success('Appointment created successfully');
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to update appointment');
+      console.error('Lỗi từ server:', error.response?.data);
+      toast.error(error.response?.data?.message || 'Failed to create appointment');
       throw error;
     }
   },
-  deleteAppointment: async (id) => {
+
+  updateAppointment: async (id, appointmentData, token) => {
     try {
-      await api.delete(`/admin/appointments/${id}`);
+      const response = await api.patch(`/admin/appointments/${id}`, appointmentData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      toast.success('Appointment updated successfully');
+      return response.data;
+    } catch (error) {
+      const errorDetails = error.response?.data || error.message;
+      console.error('Chi tiết lỗi từ server:', JSON.stringify(errorDetails, null, 2));
+      const errorMessage = error.response?.data?.message?.join(', ') || error.response?.data?.message || 'Failed to update appointment';
+      toast.error(errorMessage);
+      throw new Error(errorMessage);
+    }
+  },
+
+  deleteAppointment: async (id, token) => {
+    try {
+      await api.delete(`/appointments/admin/appointments/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       toast.success('Appointment deleted successfully');
+      return { success: true };
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to delete appointment');
-      throw error;
+      return { success: false, error: error.response?.data || error };
     }
   },
 };
