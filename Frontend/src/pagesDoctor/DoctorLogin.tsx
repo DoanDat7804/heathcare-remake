@@ -1,4 +1,3 @@
-// DoctorLogin.jsx
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +11,7 @@ import { jwtDecode } from "jwt-decode";
 
 interface JwtPayload {
   email: string;
-  sub: string; // ID bác sĩ thường nằm ở đây
+  sub: string;
   role: string;
   iat: number;
   exp: number;
@@ -44,12 +43,12 @@ const DoctorLogin = () => {
         throw new Error("Tài khoản này không phải bác sĩ!");
       }
 
-      // Lưu token và ID bác sĩ vào localStorage
+      localStorage.removeItem("adminToken");
       localStorage.setItem("token", access_token);
-      localStorage.setItem("doctorId", decodedToken.sub); // Giả định sub là ID bác sĩ
+      localStorage.setItem("doctorId", decodedToken.sub);
+      console.log("Saved doctorId:", decodedToken.sub);
 
       toast.success("Đăng nhập thành công!");
-      // Chuyển hướng đến dashboard với ID bác sĩ
       navigate("/doctor/dashboard", { state: { doctorId: decodedToken.sub } });
     } catch (error) {
       console.error("Lỗi đăng nhập:", error);

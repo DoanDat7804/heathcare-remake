@@ -43,6 +43,14 @@ export class AppointmentsController {
     return this.appointmentsService.getAllDoctors();
   }
 
+  @Put('appointments/:id/note')
+  updateNote(@Param('id') id: string, @Body('note') note: string, @Request() req) {
+  if (req.user.role !== 'doctor') {
+    throw new ForbiddenException('Chỉ bác sĩ mới có quyền cập nhật ghi chú');
+  }
+  return this.appointmentsService.updateNote(id, note, req.user.userId);
+}
+
   @Get('appointments/users') // Đổi thành /appointments/users
   getAllUsers() {
     return this.appointmentsService.getAllUsers();

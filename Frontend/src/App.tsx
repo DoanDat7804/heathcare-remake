@@ -16,6 +16,7 @@ import Profile from "./pages/Profile";
 import DoctorLogin from "./pagesDoctor/DoctorLogin";
 import Doctors from "./pages/Doctors";
 import DoctorDashboard from "./pagesDoctor/DoctorDashboard"; 
+import DoctorAppointmentDetail from "./pagesDoctor/DoctorAppointmentDetail"; 
 import DoctorProfile from "./pagesDoctor/DoctorProfile";
 import DoctorsDetail from "./pages/DoctorsDetail";
 import AdminLogin from "./pagesAdmin/AdminLogin";
@@ -49,6 +50,7 @@ const App = () => (
               <Route path="/doctor/login" element={<DoctorLogin />} />
               <Route path="/doctors/detail" element={<DoctorsDetail />} />
               <Route path="/doctor/dashboard" element={<DoctorDashboard />} /> 
+              <Route path="/doctor/appointment-detail" element={<DoctorAppointmentDetail />} />
               <Route path="/doctor/profile" element={<DoctorProfile />} />
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin/dashboard" element={<AdminDashboard />} />

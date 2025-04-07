@@ -52,7 +52,11 @@ export class AppointmentsService {
 // src/appointments/appointments.service.ts
 async findByDoctor(doctorId: string) {
   console.log("Finding appointments for doctorId:", doctorId);
-  const appointments = await this.appointmentModel.find({ doctorId }).populate('patientId', 'name').exec();
+  const appointments = await this.appointmentModel
+    .find({ doctorId })
+    .populate('patientId', 'name email phone')
+    .populate('doctorId', 'name') // Thêm để lấy tên bác sĩ
+    .exec();
   console.log("Appointments found:", appointments);
   return appointments;
 }
@@ -135,5 +139,14 @@ async findByDoctor(doctorId: string) {
 
   async getAllUsers() {
     return this.userModel.find({ role: 'patient' }).select('name _id').exec();
+  }
+
+  async updateNote(id: string, note: string, doctorId: string) {
+    const appointment = await this.appointmentModel.findOne({ _id: id, doctorId }).exec();
+    if (!appointment) {
+      throw new NotFoundException(`Không tìm thấy lịch hẹn với ID ${id} hoặc bạn không có quyền`);
+    }
+    appointment.note = note;
+    return appointment.save();
   }
 }

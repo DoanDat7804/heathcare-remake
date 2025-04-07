@@ -4,7 +4,7 @@ export const authApi = {
   login: async (email: string, password: string) => {
     try {
       const response = await api.post('/auth/login', { email, password });
-      return response.data; // Đảm bảo trả về { access_token }
+      return response.data; 
     } catch (error) {
       throw error.response?.data || error;
     }

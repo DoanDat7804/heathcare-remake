@@ -1,4 +1,3 @@
-// DoctorDashboard.jsx
 import { Button } from "@/components/ui/button";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Calendar, User, LogOut, Clock, MessageSquare } from "lucide-react";
@@ -7,17 +6,32 @@ import { Input } from "@/components/ui/input";
 import { doctorApi } from "../apis/doctorApi";
 import { toast } from "sonner";
 
-// AppointmentCard và BusyTimeCard giữ nguyên
-const AppointmentCard = ({ patientName, time, status, onViewDetails, onChat }) => {
+const AppointmentCard = ({ patientName, time, status, patientDetails, onViewDetails, onChat }) => {
+  const [showDetails, setShowDetails] = useState(false);
+
+  const handleToggleDetails = () => {
+    setShowDetails(!showDetails);
+  };
+
   return (
     <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-soft hover:shadow-md transition-shadow">
-      <div className="flex items-center gap-4">
+      <div 
+        className="flex items-center gap-4 cursor-pointer" 
+        onClick={handleToggleDetails}
+      >
         <div className="w-12 h-12 bg-hospital-100 rounded-full flex items-center justify-center">
           <User className="h-6 w-6 text-hospital-700" />
         </div>
         <div>
-          <h3 className="font-semibold">{patientName}</h3>
+          <h3 className="font-semibold hover:underline">{patientName}</h3>
           <p className="text-sm text-gray-600">{time}</p>
+          {showDetails && patientDetails && (
+            <div className="mt-2 text-sm text-gray-700">
+              <p>ID: {patientDetails._id}</p>
+              <p>Email: {patientDetails.email}</p>
+              <p>Số điện thoại: {patientDetails.phone || "Chưa cung cấp"}</p>
+            </div>
+          )}
         </div>
       </div>
       <div className="flex items-center gap-4">
@@ -82,39 +96,52 @@ const DoctorDashboard = () => {
 
     const fetchData = async () => {
       try {
+        setLoading(true);
         const doctorId = localStorage.getItem("doctorId") || location.state?.doctorId;
         if (!doctorId) {
           throw new Error("Không tìm thấy ID bác sĩ!");
         }
 
         const config = { headers: { Authorization: `Bearer ${token}` } };
+        console.log("Token used:", token);
+        console.log("Doctor ID:", doctorId);
 
-        console.log("Fetching doctor data for ID:", doctorId);
+        // Lấy thông tin bác sĩ
         const doctorResponse = await doctorApi.getDoctorById(doctorId, config);
-        console.log("Doctor data:", doctorResponse.data);
+        console.log("Doctor response:", doctorResponse.data);
         setDoctor(doctorResponse.data);
 
-        console.log("Fetching appointments...");
+        // Lấy danh sách lịch hẹn
         const appointmentsResponse = await doctorApi.getAppointments(config);
-        console.log("Appointments response:", appointmentsResponse);
-        console.log("Appointments data:", appointmentsResponse.data);
-
-        const appointmentsData = Array.isArray(appointmentsResponse.data)
-          ? appointmentsResponse.data
-          : [];
+        console.log("Appointments response:", appointmentsResponse.data);
+        const appointmentsData = Array.isArray(appointmentsResponse.data) ? appointmentsResponse.data : [];
+        const today = new Date();
         setAppointments(
-          appointmentsData.map((appt) => ({
-            patientName: appt.patientId?.name || "Unknown",
-            time: `${new Date(appt.date).toLocaleDateString()} ${appt.timeSlot}`,
-            status: appt.status,
-          }))
+          appointmentsData
+            .filter((appt) => new Date(appt.date) >= today)
+            .map((appt) => ({
+              patientName: appt.patientId?.name || "Bệnh nhân không xác định",
+              time: appt.date && appt.timeSlot 
+                ? `${new Date(appt.date).toLocaleDateString()} ${appt.timeSlot}`
+                : "Thời gian không xác định",
+              status: appt.status || "unknown",
+              patientDetails: appt.patientId,
+              original: appt,
+            }))
         );
 
-        setBusyTimes([]);
+        // Lấy thời gian bận
+        try {
+          const busyTimesResponse = await doctorApi.getBusyTimes(config);
+          setBusyTimes(Array.isArray(busyTimesResponse.data) ? busyTimesResponse.data : []);
+        } catch (err) {
+          console.warn("No busy times found:", err);
+          setBusyTimes([]);
+        }
       } catch (error) {
-        console.error("Lỗi chi tiết:", error.message, error.response?.status, error.response?.data);
+        console.error("Lỗi chi tiết:", error);
         toast.error(error.message || "Không thể tải dữ liệu!");
-        if (error.response?.status === 401) {
+        if (error.response?.status === 401 || error.response?.status === 403) {
           localStorage.removeItem("token");
           localStorage.removeItem("doctorId");
           navigate("/doctor/login", { replace: true });
@@ -127,7 +154,7 @@ const DoctorDashboard = () => {
   }, [location.state, navigate]);
 
   const handleViewAppointmentDetails = (appointment) => {
-    navigate("/doctor/appointment-detail", { state: { appointment } });
+    navigate("/doctor/appointment-detail", { state: { appointment: appointment.original } });
   };
 
   const handleChat = (patientName) => {
@@ -188,7 +215,6 @@ const DoctorDashboard = () => {
 
   return (
     <section className="section-container bg-hospital-60 min-h-screen">
-      {/* Thanh điều hướng cố định */}
       <nav className="fixed top-0 left-0 right-0 bg-white shadow-md z-10">
         <div className="max-w-5xl mx-auto px-4 py-4 flex justify-between items-center">
           <h2 className="text-2xl font-display font-bold text-hospital-700">
@@ -205,9 +231,7 @@ const DoctorDashboard = () => {
         </div>
       </nav>
 
-      {/* Nội dung chính */}
       <div className="max-w-5xl mx-auto pt-20 pb-16 px-4">
-        {/* Thông tin bác sĩ */}
         {doctor && (
           <div className="bg-white p-6 rounded-lg shadow-soft mb-8 flex items-center gap-6">
             <img
@@ -221,7 +245,8 @@ const DoctorDashboard = () => {
                 Chuyên khoa: {doctor.specialty || "Chưa cập nhật"}
               </p>
               <p className="text-gray-600">Số điện thoại: {doctor.phone}</p>
-              <p className="text-gray-500 mt-2">Giới tính: {doctor.gender}</p>
+              <p className="text-gray-500">Giới tính: {doctor.gender}</p>
+              <p className="text-gray-500">Mã bác sĩ: {doctor._id || "Không xác định"}</p>
               <Button variant="outline" className="mt-4" onClick={handleEditProfile}>
                 Chỉnh sửa hồ sơ
               </Button>
@@ -229,7 +254,6 @@ const DoctorDashboard = () => {
           </div>
         )}
 
-        {/* Form đánh dấu thời gian bận */}
         <div className="bg-white p-6 rounded-lg shadow-soft mb-8">
           <div className="flex items-center gap-2 mb-6">
             <Clock className="h-6 w-6 text-hospital-700" />
@@ -260,7 +284,6 @@ const DoctorDashboard = () => {
           </form>
         </div>
 
-        {/* Danh sách thời gian bận */}
         <div className="bg-white p-6 rounded-lg shadow-soft mb-8">
           <div className="flex items-center gap-2 mb-6">
             <Clock className="h-6 w-6 text-hospital-700" />
@@ -282,7 +305,6 @@ const DoctorDashboard = () => {
           </div>
         </div>
 
-        {/* Danh sách lịch hẹn */}
         <div className="bg-white p-6 rounded-lg shadow-soft">
           <div className="flex items-center gap-2 mb-6">
             <Calendar className="h-6 w-6 text-hospital-700" />
@@ -296,12 +318,13 @@ const DoctorDashboard = () => {
                   patientName={appointment.patientName}
                   time={appointment.time}
                   status={appointment.status}
+                  patientDetails={appointment.patientDetails}
                   onViewDetails={() => handleViewAppointmentDetails(appointment)}
                   onChat={() => handleChat(appointment.patientName)}
                 />
               ))
             ) : (
-              <p className="text-gray-500 text-center">Không có lịch hẹn nào.</p>
+              <p className="text-gray-500 text-center">Hiện tại không có lịch hẹn nào.</p>
             )}
           </div>
         </div>

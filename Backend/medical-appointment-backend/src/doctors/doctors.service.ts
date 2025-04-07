@@ -11,6 +11,14 @@ import * as bcrypt from 'bcrypt';
 export class DoctorsService {
   constructor(@InjectModel(Doctor.name) private doctorModel: Model<DoctorDocument>) {}
 
+  async findOneByEmail(email: string): Promise<DoctorDocument> {
+    const doctor = await this.doctorModel.findOne({ email }).exec();
+    if (!doctor) {
+      throw new NotFoundException(`Bác sĩ với email ${email} không tìm thấy`);
+    }
+    return doctor;
+  }
+
   async hashPassword(password: string): Promise<string> {
     const saltRounds = 10;
     return bcrypt.hash(password, saltRounds);
