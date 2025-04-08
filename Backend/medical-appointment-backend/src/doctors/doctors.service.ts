@@ -25,16 +25,20 @@ export class DoctorsService {
   }
 
   async create(createDoctorDto: CreateDoctorDto): Promise<DoctorResponseDto> {
+    console.log('Dữ liệu nhận được:', createDoctorDto);// Thêm log để kiểm tra dữ liệu đầu vào
+
     if (createDoctorDto.email) {
       const existingDoctorByEmail = await this.doctorModel.findOne({ email: createDoctorDto.email });
       if (existingDoctorByEmail) {
+        console.log('Email đã tồn tại:', createDoctorDto.email);// Thêm log khi email trùng
         throw new BadRequestException('Email đã tồn tại');
       }
     }
 
     if (createDoctorDto.phone) {
-      const existingDoctorByPhone = await this.doctorModel.findOne({ phone: createDoctorDto.phone });
+      const existingDoctorByPhone = await this.doctorModel.findOne({ phone: createDoctorDto.phone });// Thêm log khi phone trùng
       if (existingDoctorByPhone) {
+        console.log('Số điện thoại đã tồn tại:', createDoctorDto.phone);
         throw new BadRequestException('Số điện thoại đã tồn tại');
       }
     }
@@ -110,7 +114,7 @@ export class DoctorsService {
       gender: doctor.gender,
       role: doctor.role,
       isActive: doctor.isActive,
-      avatar: doctor.avatar || null, // Thêm avatar
+      avatar: doctor.avatar || null,
     };
   }
 }

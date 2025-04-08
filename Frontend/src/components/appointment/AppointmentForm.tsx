@@ -13,9 +13,9 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import AppointmentSteps from "./appointment/AppointmentSteps";
-import PatientInfoForm from "./appointment/PatientInfoForm";
-import TimeSelectionForm from "./appointment/TimeSelectionForm";
+import AppointmentSteps from "./AppointmentSteps";
+import PatientInfoForm from "./PatientInfoForm";
+import TimeSelectionForm from "./TimeSelectionForm";
 
 interface PatientInfo {
   name: string;

@@ -8,7 +8,6 @@ import { Calendar, User, Phone, Mail, FileText, ArrowLeft, Stethoscope } from "l
 import { doctorApi } from "../apis/doctorApi";
 import { toast } from "sonner";
 
-// Định nghĩa interface cho dữ liệu lịch hẹn
 interface Patient {
   _id: string;
   name: string;
@@ -25,7 +24,7 @@ interface Appointment {
   _id: string;
   patientId: Patient | string;
   doctorId: Doctor | string;
-  serviceType: string; // Thêm trường dịch vụ khám
+  serviceType: string;
   date: string;
   timeSlot: string;
   status: "confirmed" | "pending" | "cancelled" | string;
@@ -39,12 +38,10 @@ const DoctorAppointmentDetail: React.FC = () => {
   const [note, setNote] = useState<string>(appointment?.note || "");
   const [isEditing, setIsEditing] = useState<boolean>(false);
 
-  // Log dữ liệu để debug
   React.useEffect(() => {
     console.log("Appointment data:", appointment);
   }, [appointment]);
 
-  // Xử lý khi không có dữ liệu
   if (!appointment) {
     toast.error("Không tìm thấy thông tin lịch hẹn!");
     return (
@@ -64,7 +61,6 @@ const DoctorAppointmentDetail: React.FC = () => {
     );
   }
 
-  // Hàm helper để lấy thông tin từ patientId/doctorId
   const getName = (entity: Patient | Doctor | string | undefined): string => {
     if (!entity) return "Không xác định";
     return typeof entity === "string" ? entity : entity.name || "Không xác định";
@@ -85,7 +81,6 @@ const DoctorAppointmentDetail: React.FC = () => {
     return patient.phone || "Chưa cung cấp";
   };
 
-  // Hàm lưu ghi chú
   const handleSaveNote = async () => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -97,12 +92,14 @@ const DoctorAppointmentDetail: React.FC = () => {
     const config = { headers: { Authorization: `Bearer ${token}` } };
 
     try {
-      await doctorApi.updateAppointment(appointment._id, { note }, config);
+      const updatedData = { note };
+      await doctorApi.updateAppointment(appointment._id, updatedData, config);
       setIsEditing(false);
       toast.success("Cập nhật ghi chú thành công!");
     } catch (error: any) {
       console.error("Error updating note:", error);
-      toast.error(error.message || "Không thể cập nhật ghi chú!");
+      const errorMessage = error.response?.data?.message || error.message || "Không thể cập nhật ghi chú!";
+      toast.error(errorMessage);
     }
   };
 
@@ -128,7 +125,6 @@ const DoctorAppointmentDetail: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Thông tin chính */}
             <div className="grid grid-cols-2 gap-4">
               <div className="flex items-center gap-2">
                 <User className="h-5 w-5 text-hospital-700" />
@@ -154,7 +150,6 @@ const DoctorAppointmentDetail: React.FC = () => {
               </div>
             </div>
 
-            {/* Thông tin lịch hẹn */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Stethoscope className="h-5 w-5 text-hospital-700" />
@@ -190,7 +185,6 @@ const DoctorAppointmentDetail: React.FC = () => {
               </div>
             </div>
 
-            {/* Ghi chú */}
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <FileText className="h-5 w-5 text-hospital-700" />
@@ -225,7 +219,6 @@ const DoctorAppointmentDetail: React.FC = () => {
               )}
             </div>
 
-            {/* Trạng thái */}
             <div className="flex items-center gap-2">
               <Label className="text-sm text-gray-600">Trạng thái</Label>
               <span

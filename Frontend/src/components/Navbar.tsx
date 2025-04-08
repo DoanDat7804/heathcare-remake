@@ -1,16 +1,15 @@
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { Calendar, Menu, X, LogIn } from "lucide-react";
+import { Calendar, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link, useLocation, useNavigate } from "react-router-dom"; // Thêm useLocation
+import { Link, useLocation } from "react-router-dom";
 import { useAvatar } from "@/pages/AvatarContext";
-import Notification from "@/pages/Notification";
 
 const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState<boolean>(false);
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const { avatar } = useAvatar();
-  const location = useLocation(); 
+  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -25,7 +24,6 @@ const Navbar: React.FC = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Hàm kiểm tra xem đường dẫn có khớp với trang hiện tại không
   const isActive = (path: string) => location.pathname === path;
 
   return (
@@ -102,12 +100,6 @@ const Navbar: React.FC = () => {
           </nav>
 
           <div className="hidden md:flex items-center gap-3">
-            <Link to="/auth">
-              <Button variant="outline" size="sm" className="border-hospital-200 text-hospital-600 hover:bg-hospital-50">
-                <LogIn className="mr-2 h-4 w-4" />
-                Đăng nhập
-              </Button>
-            </Link>
             <Link to="/booking">
               <Button className="bg-hospital-500 hover:bg-hospital-600 text-white rounded-full" size="sm">
                 <Calendar className="mr-2 h-4 w-4" />
@@ -128,7 +120,6 @@ const Navbar: React.FC = () => {
                 Trang Cá Nhân
               </Button>
             </Link>
-            <Notification />
           </div>
 
           <button
@@ -203,12 +194,6 @@ const Navbar: React.FC = () => {
                 Liên Hệ
               </Link>
               <div className="pt-2 flex flex-col gap-2">
-                <Link to="/auth" className="w-full" onClick={() => setIsMenuOpen(false)}>
-                  <Button variant="outline" className="w-full border-hospital-200 text-hospital-600 hover:bg-hospital-50">
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Đăng nhập
-                  </Button>
-                </Link>
                 <Link to="/booking" className="w-full" onClick={() => setIsMenuOpen(false)}>
                   <Button className="bg-hospital-500 hover:bg-hospital-600 text-white w-full" size="sm">
                     <Calendar className="mr-2 h-4 w-4" />

@@ -4,9 +4,9 @@ import { doctorApi } from '../apis/doctorApi';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
-// Base URL của backend (thay đổi nếu cần)
-const BASE_URL = 'http://localhost:3000'; // Đảm bảo khớp với port backend
+const BASE_URL = 'http://localhost:3000';
 
 const Doctors = () => {
   const [doctors, setDoctors] = useState([]);
@@ -18,9 +18,7 @@ const Doctors = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 6;
   const navigate = useNavigate();
-  const dropdownRef = useRef<HTMLDivElement>(null); // Ép kiểu ref cho TypeScript
-
-  const token = 'your-jwt-token'; // Thay bằng token thực tế
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const specialties = [
     'Tất cả các khoa',
@@ -35,8 +33,7 @@ const Doctors = () => {
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
-        const config = { headers: { Authorization: `Bearer ${token}` } };
-        const response = await doctorApi.getAllDoctors(config);
+        const response = await doctorApi.getAllDoctors();
         const data = response.data || response;
         const doctorList = Array.isArray(data) ? data : [];
         const normalizedDoctors = doctorList.map((doctor) => ({
@@ -47,6 +44,7 @@ const Doctors = () => {
         setFilteredDoctors(normalizedDoctors);
       } catch (err) {
         console.error('Lỗi khi tải danh sách bác sĩ:', err);
+        toast.error(err.message || 'Không thể tải danh sách bác sĩ!');
         setDoctors([]);
         setFilteredDoctors([]);
       } finally {
@@ -110,7 +108,7 @@ const Doctors = () => {
     }
   };
 
-  if (loading) return <div>Đang tải...</div>;
+  if (loading) return <div className="text-center py-16">Đang tải...</div>;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -119,7 +117,6 @@ const Doctors = () => {
         <div className="max-w-5xl mx-auto">
           <h1 className="text-3xl font-bold text-hospital-700 mb-8 text-center">Danh sách bác sĩ</h1>
 
-          {/* Thanh tìm kiếm và dropdown */}
           <div className="mb-6 flex flex-col sm:flex-row justify-center items-center gap-4">
             <input
               type="text"

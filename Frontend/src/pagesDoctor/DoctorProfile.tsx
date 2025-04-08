@@ -1,4 +1,3 @@
-// DoctorProfile.jsx
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,18 +7,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { doctorApi } from "../apis/doctorApi";
 import { toast } from "sonner";
 
+const BASE_URL = "http://localhost:3000"; // Thêm BASE_URL để hiển thị avatar
+
 const DoctorProfile = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [doctor, setDoctor] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false); // Trạng thái hiển thị form chỉnh sửa
+  const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     specialty: "",
     phone: "",
     gender: "",
+    avatar: null, // Thêm avatar vào formData
   });
+  const [avatarFile, setAvatarFile] = useState(null); // Lưu file ảnh tạm thời
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -40,12 +43,16 @@ const DoctorProfile = () => {
         const config = { headers: { Authorization: `Bearer ${token}` } };
         const response = await doctorApi.getDoctorById(doctorId, config);
         const doctorData = response.data;
-        setDoctor(doctorData);
+        setDoctor({
+          ...doctorData,
+          avatar: doctorData.avatar ? `${BASE_URL}${doctorData.avatar}` : null, // Chuẩn hóa avatar
+        });
         setFormData({
           name: doctorData.name || "",
           specialty: doctorData.specialty || "",
           phone: doctorData.phone || "",
           gender: doctorData.gender || "",
+          avatar: doctorData.avatar ? `${BASE_URL}${doctorData.avatar}` : null, // Đặt avatar ban đầu
         });
       } catch (error) {
         toast.error(error.message || "Không thể tải thông tin bác sĩ!");
@@ -67,6 +74,14 @@ const DoctorProfile = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setAvatarFile(file);
+      setFormData((prev) => ({ ...prev, avatar: URL.createObjectURL(file) })); // Hiển thị preview
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem("token");
@@ -74,11 +89,28 @@ const DoctorProfile = () => {
     const config = { headers: { Authorization: `Bearer ${token}` } };
 
     try {
-      // Cập nhật thông tin bác sĩ qua API
-      await doctorApi.updateDoctor(doctorId, formData, config);
-      // Cập nhật state doctor để hiển thị thông tin mới
-      setDoctor((prev) => ({ ...prev, ...formData }));
-      setIsEditing(false); // Ẩn form sau khi lưu
+      // Cập nhật thông tin bác sĩ (không bao gồm avatar)
+      const updateData = {
+        name: formData.name,
+        specialty: formData.specialty,
+        phone: formData.phone,
+        gender: formData.gender,
+      };
+      await doctorApi.updateDoctor(doctorId, updateData, config);
+
+      // Upload avatar nếu có file mới
+      if (avatarFile) {
+        const uploadFormData = new FormData();
+        uploadFormData.append("avatar", avatarFile);
+        const uploadResponse = await doctorApi.uploadAvatar(doctorId, uploadFormData, config);
+        const newAvatarUrl = `${BASE_URL}${uploadResponse.data.avatar}`;
+        setFormData((prev) => ({ ...prev, avatar: newAvatarUrl }));
+        setDoctor((prev) => ({ ...prev, avatar: newAvatarUrl }));
+        setAvatarFile(null); // Reset file sau khi upload
+      }
+
+      setDoctor((prev) => ({ ...prev, ...updateData }));
+      setIsEditing(false);
       toast.success("Cập nhật hồ sơ thành công!");
     } catch (error) {
       toast.error(error.message || "Không thể cập nhật hồ sơ!");
@@ -87,7 +119,7 @@ const DoctorProfile = () => {
   };
 
   const handleEditToggle = () => {
-    setIsEditing(true); // Hiển thị form chỉnh sửa
+    setIsEditing(true);
   };
 
   if (loading) {
@@ -106,9 +138,25 @@ const DoctorProfile = () => {
           <CardContent>
             {doctor && !isEditing ? (
               <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  {doctor.avatar ? (
+                    <img
+                      src={doctor.avatar}
+                      alt={doctor.name}
+                      className="w-24 h-24 rounded-full object-cover"
+                      onError={(e) => ((e.target as HTMLImageElement).src = "https://via.placeholder.com/100")}
+                    />
+                  ) : (
+                    <img
+                      src="https://via.placeholder.com/100"
+                      alt="No Avatar"
+                      className="w-24 h-24 rounded-full object-cover"
+                    />
+                  )}
+                </div>
                 <div>
                   <Label>ID</Label>
-                  <p className="text-gray-700">{doctor.id}</p>
+                  <p className="text-gray-700">{doctor._id}</p> {/* Sửa từ doctor.id thành doctor._id */}
                 </div>
                 <div>
                   <Label>Tên</Label>
@@ -140,6 +188,31 @@ const DoctorProfile = () => {
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <Label>Ảnh đại diện</Label>
+                  <div className="flex items-center gap-4 mt-1">
+                    {formData.avatar ? (
+                      <img
+                        src={formData.avatar}
+                        alt="Avatar Preview"
+                        className="w-24 h-24 rounded-full object-cover"
+                        onError={(e) => ((e.target as HTMLImageElement).src = "https://via.placeholder.com/100")}
+                      />
+                    ) : (
+                      <img
+                        src="https://via.placeholder.com/100"
+                        alt="No Avatar"
+                        className="w-24 h-24 rounded-full object-cover"
+                      />
+                    )}
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="mt-1"
+                    />
+                  </div>
+                </div>
                 <div>
                   <Label htmlFor="name">Tên bác sĩ</Label>
                   <Input
@@ -186,7 +259,7 @@ const DoctorProfile = () => {
                   </Button>
                   <Button
                     variant="outline"
-                    onClick={() => setIsEditing(false)} // Hủy chỉnh sửa
+                    onClick={() => setIsEditing(false)}
                   >
                     Hủy
                   </Button>

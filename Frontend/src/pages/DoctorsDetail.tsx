@@ -67,16 +67,37 @@ const DoctorsDetail: React.FC = () => {
               src={doctor.avatar || 'https://via.placeholder.com/150'}
               alt={doctor.name}
               className="w-48 h-48 rounded-full object-cover shadow-md"
+              onError={(e) => ((e.target as HTMLImageElement).src = 'https://via.placeholder.com/150')}
             />
             <h1 className="text-3xl font-bold text-hospital-700">{doctor.name}</h1>
             <p className="text-hospital-500 font-medium text-lg">{doctor.specialty}</p>
-            <div className="text-gray-700 text-center leading-relaxed">
-              <p><strong>Email:</strong> {doctor.email}</p>
-              <p><strong>Số điện thoại:</strong> {doctor.phone}</p>
-              <p><strong>Giới tính:</strong> {doctor.gender}</p>
-              <p><strong>Vai trò:</strong> {doctor.role}</p>
-              <p><strong>Trạng thái:</strong> {doctor.isActive ? 'Hoạt động' : 'Không hoạt động'}</p>
+
+            {/* Thông tin bác sĩ thẳng hàng bên trái */}
+            <div className="w-full max-w-md text-gray-700">
+              <ul className="space-y-2">
+                <li>
+                  <span className="font-semibold">Email: </span>
+                  {doctor.email}
+                </li>
+                <li>
+                  <span className="font-semibold">Số điện thoại: </span>
+                  {doctor.phone}
+                </li>
+                <li>
+                  <span className="font-semibold">Giới tính: </span>
+                  {doctor.gender}
+                </li>
+                <li>
+                  <span className="font-semibold">Vai trò: </span>
+                  {doctor.role}
+                </li>
+                <li>
+                  <span className="font-semibold">Trạng thái: </span>
+                  {doctor.isActive ? 'Hoạt động' : 'Không hoạt động'}
+                </li>
+              </ul>
             </div>
+
             <Button
               variant="default"
               className="mt-4 bg-hospital-500 text-white hover:bg-hospital-600"

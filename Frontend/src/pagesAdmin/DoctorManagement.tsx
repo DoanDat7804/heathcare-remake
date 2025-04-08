@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { adminApi } from '../apis/adminApi'; // Đảm bảo đường dẫn đúng
+import { adminApi } from '../apis/adminApi';
 import { toast } from 'react-toastify';
 
-// Base URL của backend (thay đổi nếu cần)
-const BASE_URL = 'http://localhost:3000'; // Đảm bảo khớp với port backend
-
+const BASE_URL = 'http://localhost:3000';
 const ITEMS_PER_PAGE = 5;
 
 const DoctorManagement = () => {
@@ -14,7 +12,6 @@ const DoctorManagement = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [newDoctor, setNewDoctor] = useState({
-    _id: '',
     name: '',
     email: '',
     password: '',
@@ -28,7 +25,7 @@ const DoctorManagement = () => {
   const [isDuplicate, setIsDuplicate] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
-  const token = 'your-jwt-token'; // Thay bằng token thực tế
+  const token = localStorage.getItem('adminToken') || '';
 
   const specialties = [
     'Đa Khoa',
@@ -42,13 +39,14 @@ const DoctorManagement = () => {
   useEffect(() => {
     const fetchDoctors = async () => {
       try {
+        if (!token) throw new Error('Token không tồn tại. Vui lòng đăng nhập.');
         const data = await adminApi.getAllDoctors(token);
         const normalizedData = data.map((doctor) => ({
           ...doctor,
           gender: doctor.gender || 'Nam',
           role: doctor.role || 'doctor',
           isActive: doctor.isActive !== undefined ? doctor.isActive : true,
-          avatar: doctor.avatar ? `${BASE_URL}${doctor.avatar}` : null, // Thêm base URL
+          avatar: doctor.avatar ? `${BASE_URL}${doctor.avatar}` : null,
         }));
         setDoctors(normalizedData || []);
       } catch (err) {
@@ -59,7 +57,10 @@ const DoctorManagement = () => {
       }
     };
     fetchDoctors();
-  }, []);
+  }, [token]);
+
+  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const validatePhone = (phone) => /^\d{9,11}$/.test(phone);
 
   const checkDuplicate = (field, value, currentId) => {
     const isDuplicate = doctors.some(
@@ -71,6 +72,7 @@ const DoctorManagement = () => {
     } else {
       setIsDuplicate(false);
     }
+    return isDuplicate;
   };
 
   const handleAddDoctor = async () => {
@@ -85,12 +87,34 @@ const DoctorManagement = () => {
       toast.error('Vui lòng điền đầy đủ thông tin!');
       return;
     }
+
+    if (!validateEmail(newDoctor.email)) {
+      toast.error('Email không hợp lệ!');
+      return;
+    }
+    if (!validatePhone(newDoctor.phone)) {
+      toast.error('Số điện thoại không hợp lệ (9-11 chữ số)!');
+      return;
+    }
+    if (checkDuplicate('email', newDoctor.email, '') || checkDuplicate('phone', newDoctor.phone, '')) {
+      toast.error('Email hoặc số điện thoại đã tồn tại!');
+      return;
+    }
+
     try {
-      const doctorData = { ...newDoctor };
+      const doctorData = {
+        name: newDoctor.name,
+        email: newDoctor.email,
+        password: newDoctor.password,
+        phone: newDoctor.phone,
+        specialty: newDoctor.specialty,
+        gender: newDoctor.gender,
+        role: newDoctor.role,
+      };
+      console.log('Dữ liệu gửi lên:', doctorData);
       const createdDoctor = await adminApi.createDoctor(doctorData, token);
       setDoctors([...doctors, { ...createdDoctor, avatar: createdDoctor.avatar ? `${BASE_URL}${createdDoctor.avatar}` : null }]);
       setNewDoctor({
-        _id: '',
         name: '',
         email: '',
         password: '',
@@ -104,7 +128,9 @@ const DoctorManagement = () => {
       const totalPages = Math.ceil((doctors.length + 1) / ITEMS_PER_PAGE);
       setCurrentPage(totalPages);
     } catch (err) {
-      toast.error('Lỗi khi thêm bác sĩ: ' + (err.response?.data?.message || err.message));
+      console.error('Lỗi khi thêm bác sĩ:', err);
+      const errorMessage = err.message || err.statusCode ? `${err.message}` : 'Lỗi không xác định';
+      toast.error('Lỗi khi thêm bác sĩ: ' + errorMessage);
     }
   };
 
@@ -125,6 +151,14 @@ const DoctorManagement = () => {
       !editDoctor.gender
     ) {
       toast.error('Vui lòng điền đầy đủ thông tin!');
+      return;
+    }
+    if (!validateEmail(editDoctor.email)) {
+      toast.error('Email không hợp lệ!');
+      return;
+    }
+    if (!validatePhone(editDoctor.phone)) {
+      toast.error('Số điện thoại không hợp lệ (9-11 chữ số)!');
       return;
     }
     try {
@@ -157,6 +191,7 @@ const DoctorManagement = () => {
       setAvatarFile(null);
       toast.success('Cập nhật bác sĩ thành công!');
     } catch (err) {
+      console.error('Lỗi khi cập nhật:', err);
       toast.error('Lỗi khi cập nhật bác sĩ: ' + (err.response?.data?.message || err.message));
     }
   };
@@ -172,12 +207,13 @@ const DoctorManagement = () => {
         }));
         setDoctors(normalizedData || []);
         toast.success('Xóa bác sĩ thành công!');
-        const filtered = filteredDoctors.filter(doctor => doctor._id !== id);
+        const filtered = filteredDoctors.filter((doctor) => doctor._id !== id);
         const totalPagesAfterDelete = Math.ceil(filtered.length / ITEMS_PER_PAGE);
         if (currentPage > totalPagesAfterDelete && totalPagesAfterDelete > 0) {
           setCurrentPage(totalPagesAfterDelete);
         }
       } catch (err) {
+        console.error('Lỗi khi xóa:', err);
         toast.error('Lỗi khi xóa bác sĩ: ' + (err.response?.data?.message || err.message));
       }
     }
@@ -208,9 +244,7 @@ const DoctorManagement = () => {
   const currentDoctors = filteredDoctors.slice(startIndex, endIndex);
 
   const goToPage = (page) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
+    if (page >= 1 && page <= totalPages) setCurrentPage(page);
   };
 
   return (
@@ -278,9 +312,7 @@ const DoctorManagement = () => {
               className="border p-2 rounded mb-2 w-full"
             >
               {specialties.map((spec) => (
-                <option key={spec} value={spec}>
-                  {spec}
-                </option>
+                <option key={spec} value={spec}>{spec}</option>
               ))}
             </select>
             <select
@@ -294,9 +326,7 @@ const DoctorManagement = () => {
             </select>
             <button
               onClick={handleAddDoctor}
-              className={`bg-green-600 text-white px-4 py-2 rounded ${
-                isDuplicate ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'
-              }`}
+              className={`bg-green-600 text-white px-4 py-2 rounded ${isDuplicate ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'}`}
               disabled={isDuplicate}
             >
               Lưu
@@ -362,9 +392,7 @@ const DoctorManagement = () => {
               className="border p-2 rounded mb-2 w-full"
             >
               {specialties.map((spec) => (
-                <option key={spec} value={spec}>
-                  {spec}
-                </option>
+                <option key={spec} value={spec}>{spec}</option>
               ))}
             </select>
             <select
@@ -379,18 +407,9 @@ const DoctorManagement = () => {
             <div className="mb-2">
               <label className="block mb-1">Ảnh đại diện:</label>
               {editDoctor.avatar ? (
-                <img
-                  src={editDoctor.avatar}
-                  alt="Avatar"
-                  className="w-24 h-24 object-cover mb-2"
-                  // onError={(e) => (e.target.src = 'https://via.placeholder.com/100')} // Dự phòng nếu ảnh lỗi
-                />
+                <img src={editDoctor.avatar} alt="Avatar" className="w-24 h-24 object-cover mb-2" />
               ) : (
-                <img
-                  src="https://via.placeholder.com/100"
-                  alt="No Avatar"
-                  className="w-24 h-24 object-cover mb-2"
-                />
+                <img src="https://via.placeholder.com/100" alt="No Avatar" className="w-24 h-24 object-cover mb-2" />
               )}
               <input
                 type="file"
@@ -401,9 +420,7 @@ const DoctorManagement = () => {
             </div>
             <button
               onClick={handleEditDoctor}
-              className={`bg-green-600 text-white px-4 py-2 rounded ${
-                isDuplicate ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'
-              }`}
+              className={`bg-green-600 text-white px-4 py-2 rounded ${isDuplicate ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'}`}
               disabled={isDuplicate}
             >
               Cập nhật
@@ -438,18 +455,9 @@ const DoctorManagement = () => {
                 <td className="p-3">{doctor._id}</td>
                 <td className="p-3">
                   {doctor.avatar ? (
-                    <img
-                      src={doctor.avatar}
-                      alt="Avatar"
-                      className="w-12 h-12 object-cover rounded-full"
-                      // onError={(e) => (e.target.src = 'https://via.placeholder.com/100')} // Dự phòng nếu ảnh lỗi
-                    />
+                    <img src={doctor.avatar} alt="Avatar" className="w-12 h-12 object-cover rounded-full" />
                   ) : (
-                    <img
-                      src="https://via.placeholder.com/100"
-                      alt="No Avatar"
-                      className="w-12 h-12 object-cover rounded-full"
-                    />
+                    <img src="https://via.placeholder.com/100" alt="No Avatar" className="w-12 h-12 object-cover rounded-full" />
                   )}
                 </td>
                 <td className="p-3">{doctor.name}</td>
@@ -464,16 +472,10 @@ const DoctorManagement = () => {
                   </span>
                 </td>
                 <td className="p-3">
-                  <button
-                    onClick={() => startEditDoctor(doctor)}
-                    className="text-blue-600 mr-2 hover:underline"
-                  >
+                  <button onClick={() => startEditDoctor(doctor)} className="text-blue-600 mr-2 hover:underline">
                     Sửa
                   </button>
-                  <button
-                    onClick={() => handleDeleteDoctor(doctor._id)}
-                    className="text-red-600 hover:underline"
-                  >
+                  <button onClick={() => handleDeleteDoctor(doctor._id)} className="text-red-600 hover:underline">
                     Xóa
                   </button>
                 </td>

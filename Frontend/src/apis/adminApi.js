@@ -81,14 +81,19 @@ export const adminApi = {
 
   createDoctor: async (doctorData, token) => {
     try {
+      console.log('Dữ liệu gửi lên API:', doctorData);
       const response = await api.post('/doctors', doctorData, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      toast.success('Doctor created successfully');
+      toast.success('Thêm bác sĩ thành công');
       return response.data;
     } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to create doctor');
-      throw error;
+      console.error('Lỗi từ server:', JSON.stringify(error.response?.data, null, 2));
+      const errorMessage = Array.isArray(error.response?.data?.message)
+        ? error.response.data.message.join(', ')
+        : error.response?.data?.message || 'Không thể thêm bác sĩ';
+      toast.error(errorMessage);
+      throw error.response?.data || error;
     }
   },
 

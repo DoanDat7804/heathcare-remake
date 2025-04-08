@@ -4,7 +4,7 @@ export class UpdateAppointmentDto {
 
   @IsOptional()
   @IsString()
-  doctorId?: string; // Thêm trường doctorId
+  doctorId?: string; 
   
   @IsOptional()
   @IsString()

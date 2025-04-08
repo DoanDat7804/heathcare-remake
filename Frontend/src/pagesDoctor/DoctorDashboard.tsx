@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { doctorApi } from "../apis/doctorApi";
 import { toast } from "sonner";
 
+const BASE_URL = "http://localhost:3000"; // Thêm BASE_URL để nối với avatar
+
 const AppointmentCard = ({ patientName, time, status, patientDetails, onViewDetails, onChat }) => {
   const [showDetails, setShowDetails] = useState(false);
 
@@ -15,10 +17,7 @@ const AppointmentCard = ({ patientName, time, status, patientDetails, onViewDeta
 
   return (
     <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-soft hover:shadow-md transition-shadow">
-      <div 
-        className="flex items-center gap-4 cursor-pointer" 
-        onClick={handleToggleDetails}
-      >
+      <div className="flex items-center gap-4 cursor-pointer" onClick={handleToggleDetails}>
         <div className="w-12 h-12 bg-hospital-100 rounded-full flex items-center justify-center">
           <User className="h-6 w-6 text-hospital-700" />
         </div>
@@ -28,7 +27,7 @@ const AppointmentCard = ({ patientName, time, status, patientDetails, onViewDeta
           {showDetails && patientDetails && (
             <div className="mt-2 text-sm text-gray-700">
               <p>ID: {patientDetails._id}</p>
-              <p>Email: {patientDetails.email}</p>
+              <p>Email: {patientDetails.email || "Chưa cung cấp"}</p>
               <p>Số điện thoại: {patientDetails.phone || "Chưa cung cấp"}</p>
             </div>
           )}
@@ -66,7 +65,8 @@ const BusyTimeCard = ({ startTime, endTime, onDelete }) => {
         </div>
         <div>
           <p className="text-sm text-gray-600">
-            Bận từ: {startTime} đến {endTime}
+            Bận từ: {new Date(startTime).toLocaleString("vi-VN")} đến{" "}
+            {new Date(endTime).toLocaleString("vi-VN")}
           </p>
         </div>
       </div>
@@ -109,20 +109,25 @@ const DoctorDashboard = () => {
         // Lấy thông tin bác sĩ
         const doctorResponse = await doctorApi.getDoctorById(doctorId, config);
         console.log("Doctor response:", doctorResponse.data);
-        setDoctor(doctorResponse.data);
+        setDoctor({
+          ...doctorResponse.data,
+          avatar: doctorResponse.data.avatar ? `${BASE_URL}${doctorResponse.data.avatar}` : null,
+        });
 
         // Lấy danh sách lịch hẹn
         const appointmentsResponse = await doctorApi.getAppointments(config);
         console.log("Appointments response:", appointmentsResponse.data);
-        const appointmentsData = Array.isArray(appointmentsResponse.data) ? appointmentsResponse.data : [];
+        const appointmentsData = Array.isArray(appointmentsResponse.data)
+          ? appointmentsResponse.data
+          : [];
         const today = new Date();
         setAppointments(
           appointmentsData
             .filter((appt) => new Date(appt.date) >= today)
             .map((appt) => ({
               patientName: appt.patientId?.name || "Bệnh nhân không xác định",
-              time: appt.date && appt.timeSlot 
-                ? `${new Date(appt.date).toLocaleDateString()} ${appt.timeSlot}`
+              time: appt.date && appt.timeSlot
+                ? `${new Date(appt.date).toLocaleDateString("vi-VN")} ${appt.timeSlot}`
                 : "Thời gian không xác định",
               status: appt.status || "unknown",
               patientDetails: appt.patientId,
@@ -140,7 +145,7 @@ const DoctorDashboard = () => {
         }
       } catch (error) {
         console.error("Lỗi chi tiết:", error);
-        toast.error(error.message || "Không thể tải dữ liệu!");
+        toast.error(error.response?.data?.message || error.message || "Không thể tải dữ liệu!");
         if (error.response?.status === 401 || error.response?.status === 403) {
           localStorage.removeItem("token");
           localStorage.removeItem("doctorId");
@@ -181,12 +186,13 @@ const DoctorDashboard = () => {
     try {
       await doctorApi.createBusyTime(newBusyTime, config);
       const busyTimesResponse = await doctorApi.getBusyTimes(config);
-      setBusyTimes(busyTimesResponse.data || []);
+      setBusyTimes(Array.isArray(busyTimesResponse.data) ? busyTimesResponse.data : []);
       setStartTime("");
       setEndTime("");
       toast.success("Thêm thời gian bận thành công!");
     } catch (error) {
-      toast.error(error.message || "Không thể thêm thời gian bận!");
+      console.error("Error adding busy time:", error);
+      toast.error(error.response?.data?.message || "Không thể thêm thời gian bận!");
     }
   };
 
@@ -197,10 +203,11 @@ const DoctorDashboard = () => {
     try {
       await doctorApi.deleteBusyTime(busyTimeId, config);
       const busyTimesResponse = await doctorApi.getBusyTimes(config);
-      setBusyTimes(busyTimesResponse.data || []);
+      setBusyTimes(Array.isArray(busyTimesResponse.data) ? busyTimesResponse.data : []);
       toast.success("Xóa thời gian bận thành công!");
     } catch (error) {
-      toast.error(error.message || "Không thể xóa thời gian bận!");
+      console.error("Error deleting busy time:", error);
+      toast.error(error.response?.data?.message || "Không thể xóa thời gian bận!");
     }
   };
 
@@ -234,18 +241,31 @@ const DoctorDashboard = () => {
       <div className="max-w-5xl mx-auto pt-20 pb-16 px-4">
         {doctor && (
           <div className="bg-white p-6 rounded-lg shadow-soft mb-8 flex items-center gap-6">
-            <img
-              src={doctor.avatar || "default-avatar.png"}
-              alt={doctor.name}
-              className="w-24 h-24 rounded-full object-cover"
-            />
+            {doctor.avatar ? (
+              <img
+                src={doctor.avatar}
+                alt={doctor.name}
+                className="w-24 h-24 rounded-full object-cover"
+                onError={(e) => {
+                  if (e.target instanceof HTMLImageElement) {
+                    e.target.src = "https://via.placeholder.com/100";
+                  }
+                }}
+              />
+            ) : (
+              <img
+                src="https://via.placeholder.com/100"
+                alt="No Avatar"
+                className="w-24 h-24 rounded-full object-cover"
+              />
+            )}
             <div>
               <h3 className="text-2xl font-semibold text-hospital-700">{doctor.name}</h3>
               <p className="text-gray-600">
                 Chuyên khoa: {doctor.specialty || "Chưa cập nhật"}
               </p>
-              <p className="text-gray-600">Số điện thoại: {doctor.phone}</p>
-              <p className="text-gray-500">Giới tính: {doctor.gender}</p>
+              <p className="text-gray-600">Số điện thoại: {doctor.phone || "Chưa cung cấp"}</p>
+              <p className="text-gray-500">Giới tính: {doctor.gender || "Chưa xác định"}</p>
               <p className="text-gray-500">Mã bác sĩ: {doctor._id || "Không xác định"}</p>
               <Button variant="outline" className="mt-4" onClick={handleEditProfile}>
                 Chỉnh sửa hồ sơ
@@ -293,10 +313,10 @@ const DoctorDashboard = () => {
             {busyTimes.length > 0 ? (
               busyTimes.map((busyTime) => (
                 <BusyTimeCard
-                  key={busyTime.id}
+                  key={busyTime._id}
                   startTime={busyTime.startTime}
                   endTime={busyTime.endTime}
-                  onDelete={() => handleDeleteBusyTime(busyTime.id)}
+                  onDelete={() => handleDeleteBusyTime(busyTime._id)}
                 />
               ))
             ) : (

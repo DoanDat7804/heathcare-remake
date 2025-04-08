@@ -31,7 +31,7 @@ const Auth = () => {
     e.preventDefault();
     try {
       await login(loginEmail, loginPassword);
-      navigate("/"); // Chuyển hướng đến trang chủ sau khi đăng nhập
+      navigate("/index"); // Chuyển hướng đến trang chủ sau khi đăng nhập
     } catch (error) {
       console.error("Login failed:", error);
     }

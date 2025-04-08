@@ -3,7 +3,7 @@ import Hero from "@/components/Hero";
 import ServicesPreview from "@/components/Preview/ServicesPreview";
 import DoctorsPreview from "@/components/Preview/DoctorsPreview";
 import NewsPreview from "@/components/Preview/NewsPreview";
-import AppointmentForm from "@/components/AppointmentForm";
+import AppointmentForm from "@/components/appointment/AppointmentForm";
 import Chatbot from "@/pages/Chatbot"; // Sửa lỗi đánh máy từ Chabtbot thành Chatbot
 import Footer from "@/components/Footer";
 import { Link } from "react-router-dom";
