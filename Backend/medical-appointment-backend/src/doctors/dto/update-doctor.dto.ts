@@ -1,4 +1,6 @@
-import { IsString, IsEmail, IsOptional } from 'class-validator';
+// src/doctors/dto/update-doctor.dto.ts
+import { IsString, IsEmail, IsInt, IsArray, IsOptional, ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class HospitalUpdateDto {
   @IsString()
@@ -38,6 +40,20 @@ export class UpdateDoctorDto {
   @IsString()
   @IsOptional()
   gender?: string;
+
+  @IsInt()
+  @IsOptional()
+  experience?: number;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  languages?: string[];
+
+  @ValidateNested()
+  @Type(() => HospitalUpdateDto)
+  @IsOptional()
+  hospital?: HospitalUpdateDto;
 
   @IsString()
   @IsOptional()

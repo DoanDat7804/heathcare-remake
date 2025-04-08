@@ -1,3 +1,4 @@
+// src/auth/jwt.strategy.ts
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
@@ -8,16 +9,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: '4f8e5b6d9c7a12e3f4b89d5a6c7e8f9a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e', 
+      secretOrKey: '4f8e5b6d9c7a12e3f4b89d5a6c7e8f9a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e', // Thay bằng biến môi trường
     });
   }
 
   async validate(payload: any) {
-    console.log("JWT Payload:", payload);
-    return {
-      userId: payload.sub,
-      role: payload.role,
-      email: payload.email,
-    };
+    return { id: payload.sub, email: payload.email, role: payload.role };
   }
 }

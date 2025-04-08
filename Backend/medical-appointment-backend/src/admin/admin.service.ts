@@ -93,7 +93,6 @@ export class AdminService {
   }
 
   async deleteAppointment(id: string): Promise<void> {
-    const result = await this.appointmentsService.remove(id);
-    if (!result) throw new NotFoundException(`Appointment with ID ${id} not found`);
+    await this.appointmentsService.remove(id);
   }
 }

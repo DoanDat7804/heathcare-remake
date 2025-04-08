@@ -1,4 +1,17 @@
-import { IsString, IsEmail, IsBoolean, IsOptional } from 'class-validator';
+// src/doctors/dto/doctor-response.dto.ts
+import { IsString, IsEmail, IsInt, IsArray, IsOptional, IsBoolean, ValidateNested} from 'class-validator';
+
+export class HospitalDto {
+  @IsString()
+  name: string;
+
+  @IsString()
+  address: string;
+
+  @IsString()
+  @IsOptional()
+  department?: string;
+}
 
 export class DoctorResponseDto {
   @IsString()
@@ -19,6 +32,17 @@ export class DoctorResponseDto {
   @IsString()
   gender: string;
 
+  @IsInt()
+  experience: number;
+
+  @IsArray()
+  @IsString({ each: true })
+  languages: string[];
+
+  @ValidateNested()
+  @IsOptional()
+  hospital?: HospitalDto;
+
   @IsString()
   role: string;
 
@@ -27,5 +51,5 @@ export class DoctorResponseDto {
 
   @IsString()
   @IsOptional()
-  avatar?: string | null; 
+  avatar?: string | null;
 }

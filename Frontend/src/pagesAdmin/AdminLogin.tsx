@@ -1,3 +1,4 @@
+//Frontend/src/pagesAdmin/AdminLogin.tsx
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { LogIn, Mail, Lock, Shield } from "lucide-react";
 import { toast } from "sonner";
 import { authApi } from "../apis/authApi";
+import { jwtDecode } from "jwt-decode";
 
 const AdminLogin = () => {
   const [loading, setLoading] = useState(false);
@@ -15,22 +17,24 @@ const AdminLogin = () => {
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
-
+  
     const formData = new FormData(e.currentTarget);
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
-
+  
     try {
       const response = await authApi.adminLogin(email, password);
       console.log("Full API Response:", response);
-
+  
       if (response && response.access_token) {
-        // Kiểm tra role nếu backend trả về (giả định)
-        if (response.role && response.role !== 'admin') {
+        const decoded: any = jwtDecode(response.access_token);
+  
+        if (decoded.role !== 'admin') {
           toast.error("Bạn không có quyền admin!");
           setLoading(false);
           return;
         }
+  
         localStorage.setItem("adminToken", response.access_token);
         toast.success("Đăng nhập thành công!");
         navigate("/admin/dashboard");
@@ -44,6 +48,7 @@ const AdminLogin = () => {
       setLoading(false);
     }
   };
+  
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">

@@ -9,12 +9,13 @@ interface PatientInfo {
   name: string;
   phone: string;
   email: string;
-  service: string;
+  serviceType: string;
   note: string;
+  symptoms?: string[];
 }
 
 interface PatientInfoFormProps {
-  onSubmit: (data: PatientInfo) => void;
+  onSubmit: (data: PatientInfo) => Promise<void>;
   initialData: PatientInfo;
 }
 
@@ -26,12 +27,12 @@ const PatientInfoForm = ({ onSubmit, initialData }: PatientInfoFormProps) => {
   };
 
   const handleServiceChange = (value: string) => {
-    setFormData({ ...formData, service: value });
+    setFormData({ ...formData, serviceType: value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    await onSubmit(formData);
   };
 
   return (
@@ -69,17 +70,17 @@ const PatientInfoForm = ({ onSubmit, initialData }: PatientInfoFormProps) => {
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="service">Dịch vụ khám</Label>
-        <Select value={formData.service} onValueChange={handleServiceChange} required>
+        <Label htmlFor="serviceType">Loại dịch vụ khám</Label>
+        <Select value={formData.serviceType} onValueChange={handleServiceChange} required>
           <SelectTrigger>
-            <SelectValue placeholder="Chọn dịch vụ" />
+            <SelectValue placeholder="Chọn loại dịch vụ" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="general">Khám tổng quát (Đánh giá tình trạng sức khỏe chung)</SelectItem>
-            <SelectItem value="internal">Khám nội khoa (Vấn đề về các cơ quan bên trong cơ thể)</SelectItem>
-            <SelectItem value="pediatric">Khám nhi (Khám sức khỏe dành cho trẻ em)</SelectItem>
-            <SelectItem value="gynecology">Khám sản phụ khoa (Khám sức khỏe liên quan đến hệ sinh sản của phụ nữ)</SelectItem>
-            <SelectItem value="cardiology">Khám tim mạch (Kiểm tra sức khỏe của hệ tim mạch)</SelectItem>
+            <SelectItem value="general">Khám tổng quát</SelectItem>
+            <SelectItem value="internal">Khám nội khoa</SelectItem>
+            <SelectItem value="pediatric">Khám nhi</SelectItem>
+            <SelectItem value="gynecology">Khám sản phụ khoa</SelectItem>
+            <SelectItem value="cardiology">Khám tim mạch</SelectItem>
           </SelectContent>
         </Select>
       </div>

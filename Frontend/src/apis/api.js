@@ -2,7 +2,7 @@ import axios from 'axios';
 import 'react-toastify/dist/ReactToastify.css';
 
 // 🔹 Sử dụng biến môi trường để linh hoạt trong phát triển và triển khai
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000';
+const API_URL = 'http://localhost:3000';
 
 // Tạo instance axios với cấu hình mặc định
 const api = axios.create({

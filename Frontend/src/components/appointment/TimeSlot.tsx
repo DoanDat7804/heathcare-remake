@@ -1,4 +1,4 @@
-
+//Frontend/src/components/appointment/TimeSlot.tsx
 import { cn } from "@/lib/utils";
 
 interface TimeSlotProps {

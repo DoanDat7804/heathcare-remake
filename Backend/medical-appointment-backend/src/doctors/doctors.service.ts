@@ -1,3 +1,4 @@
+// src/doctors/doctors.service.ts
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -10,14 +11,6 @@ import * as bcrypt from 'bcrypt';
 @Injectable()
 export class DoctorsService {
   constructor(@InjectModel(Doctor.name) private doctorModel: Model<DoctorDocument>) {}
-
-  async findOneByEmail(email: string): Promise<DoctorDocument> {
-    const doctor = await this.doctorModel.findOne({ email }).exec();
-    if (!doctor) {
-      throw new NotFoundException(`Bác sĩ với email ${email} không tìm thấy`);
-    }
-    return doctor;
-  }
 
   async hashPassword(password: string): Promise<string> {
     const saltRounds = 10;
@@ -85,7 +78,7 @@ export class DoctorsService {
     }
 
     const updatedDoctor = await this.doctorModel
-      .findByIdAndUpdate(id, updateDoctorDto, { new: true })
+      .findByIdAndUpdate(id, { $set: updateDoctorDto }, { new: true })
       .exec();
     if (!updatedDoctor) {
       throw new NotFoundException(`Bác sĩ với ID ${id} không tìm thấy`);
@@ -100,6 +93,20 @@ export class DoctorsService {
     }
   }
 
+  async findDoctorByName(name: string): Promise<DoctorDocument | null> {
+    const doctor = await this.doctorModel.findOne({ name }).exec();
+    return doctor; // Trả về DoctorDocument hoặc null nếu không tìm thấy
+  }
+
+  // Thêm hàm để tìm bác sĩ theo chuyên khoa (dùng trong Dialogflow)
+  async findDoctorsBySpecialty(specialty: string): Promise<DoctorDocument[]> {
+    return this.doctorModel.find({ specialty }).exec();
+  }
+  async findDoctorsByGender(gender: string): Promise<DoctorDocument[]> {
+    return this.doctorModel.find({ gender, isActive: true }).exec();
+  }
+
+  
   private mapToResponseDto(doctor: DoctorDocument): DoctorResponseDto {
     return {
       _id: doctor._id.toString(),
@@ -108,9 +115,18 @@ export class DoctorsService {
       phone: doctor.phone,
       specialty: doctor.specialty,
       gender: doctor.gender,
+      experience: doctor.experience,
+      languages: doctor.languages,
+      hospital: doctor.hospital
+        ? {
+            name: doctor.hospital.name,
+            address: doctor.hospital.address,
+            department: doctor.hospital.department,
+          }
+        : undefined,
       role: doctor.role,
       isActive: doctor.isActive,
-      avatar: doctor.avatar || null, // Thêm avatar
+      avatar: doctor.avatar || null,
     };
   }
 }

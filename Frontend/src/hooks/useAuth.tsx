@@ -1,13 +1,16 @@
-
+// src/hooks/useAuth.tsx
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
-import { api } from '@/services/api';
 import { toast } from 'sonner';
+import { authApi } from '@/apis/authApi';
+import { usersApi, UserResponse } from '@/apis/usersAPI'; // Thêm import
+import { jwtDecode } from 'jwt-decode';
 
 interface User {
-  id: number;
+  id: string;
   name: string;
   email: string;
   role: string;
+  phone?: string; // Thêm phone vào interface
 }
 
 interface AuthContextType {
@@ -26,30 +29,44 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // Kiểm tra nếu người dùng đã đăng nhập (từ localStorage)
     const storedUser = localStorage.getItem('user');
     const storedToken = localStorage.getItem('token');
     
     if (storedUser && storedToken) {
       setUser(JSON.parse(storedUser));
     }
-    
     setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      const response = await api.login(email, password);
+      const response = await authApi.login(email, password);
       
-      if (response.success) {
-        setUser(response.user);
-        localStorage.setItem('user', JSON.stringify(response.user));
-        localStorage.setItem('token', response.token);
-        toast.success("Đăng nhập thành công!");
+      if (!response.access_token) {
+        throw new Error("Không nhận được access token từ server");
       }
-    } catch (error) {
-      toast.error("Đăng nhập thất bại: " + (error as Error).message);
+
+      // Giải mã token để lấy ID
+      const decodedToken: any = jwtDecode(response.access_token);
+      const token = response.access_token;
+
+      // Gọi API để lấy thông tin đầy đủ của user
+      const userData = await usersApi.getById(decodedToken.sub, token);
+      const formattedUser: User = {
+        id: userData._id,
+        name: userData.name,
+        email: userData.email,
+        role: decodedToken.role || "patient",
+        phone: userData.phone, // Lấy phone từ API
+      };
+
+      setUser(formattedUser);
+      localStorage.setItem('user', JSON.stringify(formattedUser));
+      localStorage.setItem('token', token);
+      toast.success("Đăng nhập thành công!");
+    } catch (error: any) {
+      toast.error("Đăng nhập thất bại: " + (error.message || "Lỗi không xác định"));
       throw error;
     } finally {
       setIsLoading(false);
@@ -59,13 +76,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const register = async (userData: any) => {
     try {
       setIsLoading(true);
-      const response = await api.register(userData);
-      
-      if (response.success) {
-        toast.success("Đăng ký thành công! Vui lòng đăng nhập.");
-      }
-    } catch (error) {
-      toast.error("Đăng ký thất bại: " + (error as Error).message);
+      await authApi.register(userData);
+      toast.success("Đăng ký thành công! Vui lòng đăng nhập.");
+    } catch (error: any) {
+      toast.error("Đăng ký thất bại: " + (error.message || "Lỗi không xác định"));
       throw error;
     } finally {
       setIsLoading(false);
@@ -77,6 +91,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem('user');
     localStorage.removeItem('token');
     toast.info("Đã đăng xuất khỏi hệ thống");
+    window.location.href = '/login';
   };
 
   return (
