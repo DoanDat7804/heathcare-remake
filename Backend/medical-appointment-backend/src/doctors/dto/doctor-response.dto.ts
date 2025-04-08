@@ -1,4 +1,4 @@
-import { IsString, IsEmail, IsBoolean } from 'class-validator';
+import { IsString, IsEmail, IsBoolean, IsOptional } from 'class-validator';
 
 export class DoctorResponseDto {
   @IsString()
@@ -24,5 +24,8 @@ export class DoctorResponseDto {
 
   @IsBoolean()
   isActive: boolean;
-  
+
+  @IsString()
+  @IsOptional()
+  avatar?: string | null; 
 }

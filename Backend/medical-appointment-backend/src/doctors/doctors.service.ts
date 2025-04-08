@@ -45,7 +45,7 @@ export class DoctorsService {
 
     const createdDoctor = new this.doctorModel({
       ...createDoctorDto,
-      role: createDoctorDto.role || 'doctor', // Mặc định là 'doctor' nếu không cung cấp
+      role: createDoctorDto.role || 'doctor',
       isActive: true,
     });
     const savedDoctor = await createdDoctor.save();
@@ -110,6 +110,7 @@ export class DoctorsService {
       gender: doctor.gender,
       role: doctor.role,
       isActive: doctor.isActive,
+      avatar: doctor.avatar || null, // Thêm avatar
     };
   }
 }

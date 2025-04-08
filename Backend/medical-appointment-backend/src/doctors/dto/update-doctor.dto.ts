@@ -42,4 +42,8 @@ export class UpdateDoctorDto {
   @IsString()
   @IsOptional()
   role?: string;
+
+  @IsString()
+  @IsOptional()
+  avatar?: string;
 }

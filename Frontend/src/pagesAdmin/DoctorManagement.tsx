@@ -1,28 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { adminApi } from '../apis/adminApi';
+import { adminApi } from '../apis/adminApi'; // Đảm bảo đường dẫn đúng
 import { toast } from 'react-toastify';
 
-interface Doctor {
-  _id: string;
-  name: string;
-  email: string;
-  password: string;
-  phone: string;
-  specialty: string;
-  gender: string;
-  role: string;
-  isActive?: boolean;
-}
+// Base URL của backend (thay đổi nếu cần)
+const BASE_URL = 'http://localhost:3000'; // Đảm bảo khớp với port backend
 
-const ITEMS_PER_PAGE = 5; // Số lượng bác sĩ mỗi trang
+const ITEMS_PER_PAGE = 5;
 
-const DoctorManagement: React.FC = () => {
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [showAddForm, setShowAddForm] = useState<boolean>(false);
-  const [showEditForm, setShowEditForm] = useState<boolean>(false);
-  const [newDoctor, setNewDoctor] = useState<Doctor>({
+const DoctorManagement = () => {
+  const [doctors, setDoctors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [newDoctor, setNewDoctor] = useState({
     _id: '',
     name: '',
     email: '',
@@ -32,9 +23,10 @@ const DoctorManagement: React.FC = () => {
     gender: 'Nam',
     role: 'doctor',
   });
-  const [editDoctor, setEditDoctor] = useState<Doctor | null>(null);
-  const [isDuplicate, setIsDuplicate] = useState<boolean>(false);
-  const [currentPage, setCurrentPage] = useState<number>(1); // State để theo dõi trang hiện tại
+  const [editDoctor, setEditDoctor] = useState(null);
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [isDuplicate, setIsDuplicate] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const token = 'your-jwt-token'; // Thay bằng token thực tế
 
@@ -51,17 +43,16 @@ const DoctorManagement: React.FC = () => {
     const fetchDoctors = async () => {
       try {
         const data = await adminApi.getAllDoctors(token);
-        const normalizedData = data.map((doctor: Doctor) => ({
+        const normalizedData = data.map((doctor) => ({
           ...doctor,
           gender: doctor.gender || 'Nam',
           role: doctor.role || 'doctor',
           isActive: doctor.isActive !== undefined ? doctor.isActive : true,
+          avatar: doctor.avatar ? `${BASE_URL}${doctor.avatar}` : null, // Thêm base URL
         }));
         setDoctors(normalizedData || []);
-      } catch (err: any) {
-        const errorMessage = err.response?.data?.message || err.message || 'Không thể kết nối đến server';
-        console.error('Lỗi khi tải danh sách bác sĩ:', err);
-        toast.error('Lỗi khi tải danh sách bác sĩ: ' + errorMessage);
+      } catch (err) {
+        toast.error('Lỗi khi tải danh sách bác sĩ: ' + (err.response?.data?.message || err.message));
         setDoctors([]);
       } finally {
         setLoading(false);
@@ -70,7 +61,7 @@ const DoctorManagement: React.FC = () => {
     fetchDoctors();
   }, []);
 
-  const checkDuplicate = (field: 'email' | 'phone', value: string, currentId: string) => {
+  const checkDuplicate = (field, value, currentId) => {
     const isDuplicate = doctors.some(
       (doctor) => doctor[field] === value && doctor._id !== currentId
     );
@@ -95,18 +86,9 @@ const DoctorManagement: React.FC = () => {
       return;
     }
     try {
-      const doctorData = {
-        name: newDoctor.name,
-        email: newDoctor.email,
-        password: newDoctor.password,
-        phone: newDoctor.phone,
-        specialty: newDoctor.specialty,
-        gender: newDoctor.gender,
-        role: 'doctor',
-      };
-      console.log('Dữ liệu gửi đi (POST):', doctorData);
+      const doctorData = { ...newDoctor };
       const createdDoctor = await adminApi.createDoctor(doctorData, token);
-      setDoctors([...doctors, createdDoctor]);
+      setDoctors([...doctors, { ...createdDoctor, avatar: createdDoctor.avatar ? `${BASE_URL}${createdDoctor.avatar}` : null }]);
       setNewDoctor({
         _id: '',
         name: '',
@@ -119,19 +101,17 @@ const DoctorManagement: React.FC = () => {
       });
       setShowAddForm(false);
       toast.success('Thêm bác sĩ thành công!');
-      // Chuyển đến trang cuối cùng sau khi thêm bác sĩ mới
       const totalPages = Math.ceil((doctors.length + 1) / ITEMS_PER_PAGE);
       setCurrentPage(totalPages);
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Không thể kết nối đến server';
-      console.error('Lỗi từ server (POST):', err);
-      toast.error('Lỗi khi thêm bác sĩ: ' + errorMessage);
+    } catch (err) {
+      toast.error('Lỗi khi thêm bác sĩ: ' + (err.response?.data?.message || err.message));
     }
   };
 
-  const startEditDoctor = (doctor: Doctor) => {
+  const startEditDoctor = (doctor) => {
     setEditDoctor({ ...doctor, password: '' });
     setShowEditForm(true);
+    setAvatarFile(null);
     setIsDuplicate(false);
   };
 
@@ -148,7 +128,7 @@ const DoctorManagement: React.FC = () => {
       return;
     }
     try {
-      const doctorData: Partial<Doctor> = {
+      const doctorData = {
         name: editDoctor.name,
         email: editDoctor.email,
         phone: editDoctor.phone,
@@ -157,38 +137,48 @@ const DoctorManagement: React.FC = () => {
         role: 'doctor',
         ...(editDoctor.password ? { password: editDoctor.password } : {}),
       };
-      console.log('Dữ liệu gửi đi (PATCH):', doctorData);
       await adminApi.updateDoctor(editDoctor._id, doctorData, token);
+
+      if (avatarFile) {
+        const formData = new FormData();
+        formData.append('avatar', avatarFile);
+        const updatedDoctor = await adminApi.uploadAvatar(editDoctor._id, formData, token);
+        setEditDoctor({ ...editDoctor, avatar: updatedDoctor.avatar ? `${BASE_URL}${updatedDoctor.avatar}` : null });
+      }
+
       const data = await adminApi.getAllDoctors(token);
-      setDoctors(data || []);
+      const normalizedData = data.map((doctor) => ({
+        ...doctor,
+        avatar: doctor.avatar ? `${BASE_URL}${doctor.avatar}` : null,
+      }));
+      setDoctors(normalizedData || []);
       setShowEditForm(false);
       setEditDoctor(null);
+      setAvatarFile(null);
       toast.success('Cập nhật bác sĩ thành công!');
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || err.message || 'Không thể kết nối đến server';
-      console.error('Lỗi từ server (PATCH):', err);
-      toast.error('Lỗi khi cập nhật bác sĩ: ' + errorMessage);
+    } catch (err) {
+      toast.error('Lỗi khi cập nhật bác sĩ: ' + (err.response?.data?.message || err.message));
     }
   };
 
-  const handleDeleteDoctor = async (id: string) => {
-    console.log('ID gửi đi để xóa:', id);
+  const handleDeleteDoctor = async (id) => {
     if (window.confirm('Bạn có chắc muốn xóa bác sĩ này?')) {
       try {
         await adminApi.deleteDoctor(id, token);
         const data = await adminApi.getAllDoctors(token);
-        setDoctors(data || []);
+        const normalizedData = data.map((doctor) => ({
+          ...doctor,
+          avatar: doctor.avatar ? `${BASE_URL}${doctor.avatar}` : null,
+        }));
+        setDoctors(normalizedData || []);
         toast.success('Xóa bác sĩ thành công!');
-        // Nếu xóa bác sĩ làm số lượng trên trang hiện tại không đủ, chuyển về trang trước
         const filtered = filteredDoctors.filter(doctor => doctor._id !== id);
         const totalPagesAfterDelete = Math.ceil(filtered.length / ITEMS_PER_PAGE);
         if (currentPage > totalPagesAfterDelete && totalPagesAfterDelete > 0) {
           setCurrentPage(totalPagesAfterDelete);
         }
-      } catch (err: any) {
-        const errorMessage = err.response?.data?.message || err.message || 'Không thể kết nối đến server';
-        console.error('Lỗi từ server (DELETE):', err);
-        toast.error('Lỗi khi xóa bác sĩ: ' + errorMessage);
+      } catch (err) {
+        toast.error('Lỗi khi xóa bác sĩ: ' + (err.response?.data?.message || err.message));
       }
     }
   };
@@ -211,15 +201,13 @@ const DoctorManagement: React.FC = () => {
       })
     : [];
 
-  // Tính toán phân trang
   const totalItems = filteredDoctors.length;
   const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
   const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const currentDoctors = filteredDoctors.slice(startIndex, endIndex);
 
-  // Hàm chuyển trang
-  const goToPage = (page: number) => {
+  const goToPage = (page) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
     }
@@ -388,6 +376,29 @@ const DoctorManagement: React.FC = () => {
               <option value="Nữ">Nữ</option>
               <option value="Khác">Khác</option>
             </select>
+            <div className="mb-2">
+              <label className="block mb-1">Ảnh đại diện:</label>
+              {editDoctor.avatar ? (
+                <img
+                  src={editDoctor.avatar}
+                  alt="Avatar"
+                  className="w-24 h-24 object-cover mb-2"
+                  // onError={(e) => (e.target.src = 'https://via.placeholder.com/100')} // Dự phòng nếu ảnh lỗi
+                />
+              ) : (
+                <img
+                  src="https://via.placeholder.com/100"
+                  alt="No Avatar"
+                  className="w-24 h-24 object-cover mb-2"
+                />
+              )}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setAvatarFile(e.target.files?.[0] || null)}
+                className="border p-2 rounded w-full"
+              />
+            </div>
             <button
               onClick={handleEditDoctor}
               className={`bg-green-600 text-white px-4 py-2 rounded ${
@@ -410,6 +421,7 @@ const DoctorManagement: React.FC = () => {
           <thead>
             <tr className="bg-gray-50">
               <th className="p-3 text-left">ID</th>
+              <th className="p-3 text-left">Ảnh</th>
               <th className="p-3 text-left">Tên</th>
               <th className="p-3 text-left">Email</th>
               <th className="p-3 text-left">SĐT</th>
@@ -424,6 +436,22 @@ const DoctorManagement: React.FC = () => {
             {currentDoctors.map((doctor) => (
               <tr key={doctor._id} className="border-t">
                 <td className="p-3">{doctor._id}</td>
+                <td className="p-3">
+                  {doctor.avatar ? (
+                    <img
+                      src={doctor.avatar}
+                      alt="Avatar"
+                      className="w-12 h-12 object-cover rounded-full"
+                      // onError={(e) => (e.target.src = 'https://via.placeholder.com/100')} // Dự phòng nếu ảnh lỗi
+                    />
+                  ) : (
+                    <img
+                      src="https://via.placeholder.com/100"
+                      alt="No Avatar"
+                      className="w-12 h-12 object-cover rounded-full"
+                    />
+                  )}
+                </td>
                 <td className="p-3">{doctor.name}</td>
                 <td className="p-3">{doctor.email}</td>
                 <td className="p-3">{doctor.phone}</td>
@@ -454,7 +482,6 @@ const DoctorManagement: React.FC = () => {
           </tbody>
         </table>
 
-        {/* Phân trang */}
         {totalItems > 0 && (
           <div className="flex justify-between items-center mt-4">
             <div className="text-sm text-gray-600">
@@ -468,7 +495,7 @@ const DoctorManagement: React.FC = () => {
               >
                 Trước
               </button>
-              {Array.from({ length: totalPages }, (_, index) => index + 1).map(page => (
+              {Array.from({ length: totalPages }, (_, index) => index + 1).map((page) => (
                 <button
                   key={page}
                   onClick={() => goToPage(page)}

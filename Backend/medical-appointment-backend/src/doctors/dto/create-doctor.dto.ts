@@ -32,6 +32,10 @@ export class CreateDoctorDto {
   gender: string;
 
   @IsString()
-  @IsOptional() 
+  @IsOptional()
   role?: string;
+
+  @IsString()
+  @IsOptional()
+  avatar?: string;
 }

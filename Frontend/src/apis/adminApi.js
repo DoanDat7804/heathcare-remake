@@ -69,10 +69,9 @@ export const adminApi = {
   // Quản lý Doctors
   getAllDoctors: async (token) => {
     try {
-      const response = await api.get('/admin/doctors', {
+      const response = await api.get('/doctors', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log('Raw doctors data from API:', response.data); // Thêm log để kiểm tra
       return response.data;
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to fetch doctors');
@@ -82,7 +81,7 @@ export const adminApi = {
 
   createDoctor: async (doctorData, token) => {
     try {
-      const response = await api.post('/admin/doctors', doctorData, {
+      const response = await api.post('/doctors', doctorData, {
         headers: { Authorization: `Bearer ${token}` },
       });
       toast.success('Doctor created successfully');
@@ -95,7 +94,7 @@ export const adminApi = {
 
   updateDoctor: async (id, doctorData, token) => {
     try {
-      const response = await api.patch(`/admin/doctors/${id}`, doctorData, {
+      const response = await api.patch(`/doctors/${id}`, doctorData, {
         headers: { Authorization: `Bearer ${token}` },
       });
       toast.success('Doctor updated successfully');
@@ -108,15 +107,30 @@ export const adminApi = {
 
   deleteDoctor: async (id, token) => {
     try {
-      await api.delete(`/admin/doctors/${id}`, {
+      await api.delete(`/doctors/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       toast.success('Doctor deleted successfully');
       return { success: true };
     } catch (error) {
-      const errorMessage = error.response?.data?.message || 'Failed to delete doctor';
-      toast.error(errorMessage);
-      return { success: false, error: error.response?.data || error };
+      toast.error(error.response?.data?.message || 'Failed to delete doctor');
+      throw error;
+    }
+  },
+
+  uploadAvatar: async (id, formData, token) => {
+    try {
+      const response = await api.post(`/doctors/${id}/upload-avatar`, formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      toast.success('Ảnh đại diện đã được cập nhật!');
+      return response.data;
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Lỗi khi upload ảnh');
+      throw error;
     }
   },
 
