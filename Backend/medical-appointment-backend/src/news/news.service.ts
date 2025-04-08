@@ -32,8 +32,7 @@ export class NewsService {
       },
     };
 
-    console.log('Dữ liệu trước khi lưu:', newsData); // Thêm log để kiểm tra
-
+    console.log('Dữ liệu trước khi lưu:', newsData);
     const newNews = new this.newsModel(newsData);
     return newNews.save();
   }
@@ -73,5 +72,18 @@ export class NewsService {
       throw new NotFoundException(`Tin tức với ID ${id} không tìm thấy`);
     }
     await this.newsModel.findByIdAndDelete(id).exec();
+  }
+
+  // Phương thức công khai
+  async findAllPublished(): Promise<News[]> {
+    return this.newsModel.find({ isPublished: true }).exec();
+  }
+
+  async findOnePublished(id: string): Promise<News> {
+    const news = await this.newsModel.findOne({ _id: id, isPublished: true }).exec();
+    if (!news) {
+      throw new NotFoundException(`Tin tức với ID ${id} không tìm thấy hoặc chưa được công khai`);
+    }
+    return news;
   }
 }
