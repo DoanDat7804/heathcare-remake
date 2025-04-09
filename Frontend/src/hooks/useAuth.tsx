@@ -1,8 +1,6 @@
-// src/hooks/useAuth.tsx
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { toast } from 'sonner';
 import { authApi } from '@/apis/authApi';
-import { usersApi, UserResponse } from '@/apis/usersAPI'; // Thêm import
 import { jwtDecode } from 'jwt-decode';
 
 interface User {
@@ -10,13 +8,13 @@ interface User {
   name: string;
   email: string;
   role: string;
-  phone?: string; // Thêm phone vào interface
+  phone?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, isAdmin?: boolean) => Promise<User>; // Trả về User
   register: (userData: any) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
@@ -30,42 +28,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
-    const storedToken = localStorage.getItem('token');
-    
+    const storedToken = localStorage.getItem('token') || localStorage.getItem('adminToken');
+
     if (storedUser && storedToken) {
       setUser(JSON.parse(storedUser));
     }
     setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, isAdmin: boolean = false): Promise<User> => {
     try {
       setIsLoading(true);
-      const response = await authApi.login(email, password);
-      
+      const response = await (isAdmin ? authApi.adminLogin(email, password) : authApi.login(email, password));
+      console.log("Login response:", response);
+
       if (!response.access_token) {
         throw new Error("Không nhận được access token từ server");
       }
 
-      // Giải mã token để lấy ID
       const decodedToken: any = jwtDecode(response.access_token);
       const token = response.access_token;
 
-      // Gọi API để lấy thông tin đầy đủ của user
-      const userData = await usersApi.getById(decodedToken.sub, token);
       const formattedUser: User = {
-        id: userData._id,
-        name: userData.name,
-        email: userData.email,
+        id: decodedToken.sub,
+        name: decodedToken.name || (isAdmin ? "Admin" : "Doctor"),
+        email: decodedToken.email,
         role: decodedToken.role || "patient",
-        phone: userData.phone, // Lấy phone từ API
+        phone: decodedToken.phone || "",
       };
 
       setUser(formattedUser);
       localStorage.setItem('user', JSON.stringify(formattedUser));
-      localStorage.setItem('token', token);
+      localStorage.setItem(isAdmin ? 'adminToken' : 'token', token);
+
       toast.success("Đăng nhập thành công!");
+      return formattedUser; // Trả về user vừa tạo
     } catch (error: any) {
+      console.error("Login error:", error);
       toast.error("Đăng nhập thất bại: " + (error.message || "Lỗi không xác định"));
       throw error;
     } finally {
@@ -90,19 +89,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setUser(null);
     localStorage.removeItem('user');
     localStorage.removeItem('token');
+    localStorage.removeItem('adminToken');
     toast.info("Đã đăng xuất khỏi hệ thống");
-    window.location.href = '/login';
+    window.location.href = '/auth';
   };
 
   return (
-    <AuthContext.Provider 
-      value={{ 
-        user, 
-        isLoading, 
-        login, 
-        register, 
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        login,
+        register,
         logout,
-        isAuthenticated: !!user
+        isAuthenticated: !!user,
       }}
     >
       {children}

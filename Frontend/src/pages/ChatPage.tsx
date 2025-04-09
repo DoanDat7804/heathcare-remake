@@ -68,7 +68,7 @@ const ChatPage = () => {
     try {
       // Gửi trực tiếp tới backend (nếu không dùng Dialogflow API)
       const response = await axios.post(
-        "https://5d9b-2405-4803-fc1b-29c0-f92c-a27b-2304-6f0d.ngrok-free.app/dialogflow-webhook",
+        " https://38fc-118-70-133-195.ngrok-free.app/dialogflow-webhook",
         {
           queryResult: { queryText: newMessage },
           session: `session-${Date.now()}`,

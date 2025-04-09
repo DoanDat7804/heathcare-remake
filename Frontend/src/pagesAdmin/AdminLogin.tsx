@@ -1,4 +1,3 @@
-//Frontend/src/pagesAdmin/AdminLogin.tsx
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -7,39 +6,27 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { LogIn, Mail, Lock, Shield } from "lucide-react";
 import { toast } from "sonner";
-import { authApi } from "../apis/authApi";
-import { jwtDecode } from "jwt-decode";
+import { useAuth } from "../hooks/useAuth";
 
 const AdminLogin = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
-  
+
     const formData = new FormData(e.currentTarget);
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
-  
+
     try {
-      const response = await authApi.adminLogin(email, password);
-      console.log("Full API Response:", response);
-  
-      if (response && response.access_token) {
-        const decoded: any = jwtDecode(response.access_token);
-  
-        if (decoded.role !== 'admin') {
-          toast.error("Bạn không có quyền admin!");
-          setLoading(false);
-          return;
-        }
-  
-        localStorage.setItem("adminToken", response.access_token);
-        toast.success("Đăng nhập thành công!");
+      const loggedInUser = await login(email, password, true); // isAdmin = true
+      if (loggedInUser.role === "admin") {
         navigate("/admin/dashboard");
       } else {
-        toast.error("Lỗi đăng nhập: Không nhận được token.");
+        throw new Error("Bạn không có quyền admin!");
       }
     } catch (error: any) {
       console.error("Error details:", error);
@@ -48,7 +35,6 @@ const AdminLogin = () => {
       setLoading(false);
     }
   };
-  
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">

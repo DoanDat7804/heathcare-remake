@@ -46,9 +46,11 @@ const Auth = () => {
     }
     
     try {
+      // Kết hợp firstName và lastName thành trường name
+      const name = `${firstName} ${lastName}`.trim();
+      
       await register({
-        firstName,
-        lastName,
+        name, // Gửi giá trị name đã kết hợp
         email: registerEmail,
         phone,
         password: registerPassword

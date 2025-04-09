@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,51 +6,27 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { LogIn, Mail, Lock, UserCog } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { authApi } from "../apis/authApi";
-import { jwtDecode } from "jwt-decode";
-
-interface JwtPayload {
-  email: string;
-  sub: string;
-  role: string;
-  iat: number;
-  exp: number;
-}
+import { useAuth } from "../hooks/useAuth";
 
 const DoctorLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const response = await authApi.login(email, password);
-      console.log("Response từ authApi.login:", response);
-
-      const { access_token } = response;
-      if (!access_token) {
-        throw new Error("Không nhận được token từ server!");
-      }
-
-      const decodedToken = jwtDecode<JwtPayload>(access_token);
-      console.log("Decoded token:", decodedToken);
-
-      if (decodedToken.role !== "doctor") {
+      const loggedInUser = await login(email, password, false); // isAdmin = false
+      if (loggedInUser.role === "doctor") {
+        navigate("/doctor/dashboard", { state: { doctorId: loggedInUser.id } });
+      } else {
         throw new Error("Tài khoản này không phải bác sĩ!");
       }
-
-      localStorage.removeItem("adminToken");
-      localStorage.setItem("token", access_token);
-      localStorage.setItem("doctorId", decodedToken.sub);
-      console.log("Saved doctorId:", decodedToken.sub);
-
-      toast.success("Đăng nhập thành công!");
-      navigate("/doctor/dashboard", { state: { doctorId: decodedToken.sub } });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Lỗi đăng nhập:", error);
       toast.error(error.message || "Đăng nhập thất bại!");
     } finally {

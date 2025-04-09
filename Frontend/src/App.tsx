@@ -9,7 +9,6 @@ import News from "./pages/News";
 import Auth from "./pages/Auth";
 import Services from "./pages/Services";
 import Contact from "./pages/Contact";
-
 import Introduce from "./pages/Introduce";
 import Profile from "./pages/Profile";
 import DoctorLogin from "./pagesDoctor/DoctorLogin";

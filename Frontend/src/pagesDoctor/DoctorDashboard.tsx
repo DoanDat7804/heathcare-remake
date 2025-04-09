@@ -5,7 +5,9 @@ import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { doctorApi } from "../apis/doctorApi";
 import { toast } from "sonner";
+import { useAuth } from "../hooks/useAuth";
 
+// Component AppointmentCard
 const AppointmentCard = ({ patientName, time, status, patientDetails, onViewDetails, onChat }) => {
   const [showDetails, setShowDetails] = useState(false);
 
@@ -57,6 +59,7 @@ const AppointmentCard = ({ patientName, time, status, patientDetails, onViewDeta
   );
 };
 
+// Component BusyTimeCard
 const BusyTimeCard = ({ startTime, endTime, onDelete }) => {
   return (
     <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-soft hover:shadow-md transition-shadow">
@@ -77,9 +80,11 @@ const BusyTimeCard = ({ startTime, endTime, onDelete }) => {
   );
 };
 
+// Component DoctorDashboard
 const DoctorDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, isAuthenticated } = useAuth();
   const [doctor, setDoctor] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [busyTimes, setBusyTimes] = useState([]);
@@ -89,7 +94,7 @@ const DoctorDashboard = () => {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) {
+    if (!token || !isAuthenticated || user?.role !== "doctor") {
       navigate("/doctor/login", { replace: true });
       return;
     }
@@ -97,29 +102,45 @@ const DoctorDashboard = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const doctorId = localStorage.getItem("doctorId") || location.state?.doctorId;
+        const doctorId = user.id || location.state?.doctorId;
         if (!doctorId) {
           throw new Error("Không tìm thấy ID bác sĩ!");
         }
-
+    
+        const token = localStorage.getItem("token");
+        console.log("Raw token from localStorage:", token);
         const config = { headers: { Authorization: `Bearer ${token}` } };
-        console.log("Token used:", token);
-        console.log("Doctor ID:", doctorId);
-
+        console.log("Config headers:", config.headers);
+    
+        // Decode token để kiểm tra nội dung
+        const decodedToken = token ? JSON.parse(atob(token.split('.')[1])) : null;
+        console.log("Decoded token:", decodedToken);
+    
         // Lấy thông tin bác sĩ
+        console.log("Calling getDoctorById...");
         const doctorResponse = await doctorApi.getDoctorById(doctorId, config);
         console.log("Doctor response:", doctorResponse.data);
         setDoctor(doctorResponse.data);
-
+    
         // Lấy danh sách lịch hẹn
+        console.log("Calling getAppointments (/appointments/me)...");
         const appointmentsResponse = await doctorApi.getAppointments(config);
-        console.log("Appointments response:", appointmentsResponse.data);
+        console.log("Appointments response (raw):", appointmentsResponse);
+        console.log("Appointments data:", appointmentsResponse.data);
         const appointmentsData = Array.isArray(appointmentsResponse.data) ? appointmentsResponse.data : [];
+        console.log("Appointments data (processed):", appointmentsData);
+    
         const today = new Date();
+        const filteredAppointments = appointmentsData.filter((appt) => {
+          const isFuture = new Date(appt.date) >= today;
+          console.log(`Appointment date: ${appt.date}, isFuture: ${isFuture}`);
+          return isFuture;
+        });
+        console.log("Filtered appointments:", filteredAppointments);
+    
         setAppointments(
-          appointmentsData
-            .filter((appt) => new Date(appt.date) >= today)
-            .map((appt) => ({
+          filteredAppointments.map((appt) => {
+            const mapped = {
               patientName: appt.patientId?.name || "Bệnh nhân không xác định",
               time: appt.date && appt.timeSlot 
                 ? `${new Date(appt.date).toLocaleDateString()} ${appt.timeSlot}`
@@ -127,12 +148,17 @@ const DoctorDashboard = () => {
               status: appt.status || "unknown",
               patientDetails: appt.patientId,
               original: appt,
-            }))
+            };
+            console.log("Mapped appointment:", mapped);
+            return mapped;
+          })
         );
-
+    
         // Lấy thời gian bận
+        console.log("Calling getBusyTimes...");
         try {
           const busyTimesResponse = await doctorApi.getBusyTimes(config);
+          console.log("Busy times response:", busyTimesResponse.data);
           setBusyTimes(Array.isArray(busyTimesResponse.data) ? busyTimesResponse.data : []);
         } catch (err) {
           console.warn("No busy times found:", err);
@@ -140,6 +166,8 @@ const DoctorDashboard = () => {
         }
       } catch (error) {
         console.error("Lỗi chi tiết:", error);
+        console.error("Error response:", error.response?.data);
+        console.error("Status code:", error.response?.status);
         toast.error(error.message || "Không thể tải dữ liệu!");
         if (error.response?.status === 401 || error.response?.status === 403) {
           localStorage.removeItem("token");
@@ -151,7 +179,7 @@ const DoctorDashboard = () => {
       }
     };
     fetchData();
-  }, [location.state, navigate]);
+  }, [location.state, navigate, user, isAuthenticated]);
 
   const handleViewAppointmentDetails = (appointment) => {
     navigate("/doctor/appointment-detail", { state: { appointment: appointment.original } });
@@ -205,7 +233,7 @@ const DoctorDashboard = () => {
   };
 
   const handleEditProfile = () => {
-    const doctorId = localStorage.getItem("doctorId") || location.state?.doctorId;
+    const doctorId = user.id || location.state?.doctorId;
     navigate("/doctor/profile", { state: { doctorId } });
   };
 
