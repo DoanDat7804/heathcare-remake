@@ -32,7 +32,7 @@ export class DialogflowService {
     const symptomToSpecialty: Record<string, string> = {
       'phát ban': 'Da liễu',
       'đau họng': 'Tai mũi họng',
-      'sốt': 'Nội tổng quát',
+      'sốt': 'Nội khoa',
       'đau đầu': 'Thần kinh',
       'ho': 'Hô hấp',
       'buồn nôn': 'Tiêu hóa',
@@ -54,6 +54,20 @@ export class DialogflowService {
     return !existingAppointment.some(
       (appt) => appt.date.toISOString().split('T')[0] === date && appt.timeSlot === timeSlot,
     );
+  }
+
+  async classifyInput(input: string): Promise<{ symptoms: string[]; doctorName?: string }> {
+    const symptomsList = [
+      'phát ban', 'đau họng', 'sốt', 'đau đầu', 'ho', 'buồn nôn', 'mệt mỏi', 'khó thở',
+    ];
+    const doctors = await this.doctorModel.find({ isActive: true }).exec();
+    const doctorNames = doctors.map((d) => d.name.toLowerCase());
+
+    const words = input.toLowerCase().split(' ');
+    const symptoms = words.filter((word) => symptomsList.includes(word));
+    const doctorName = words.find((word) => doctorNames.includes(word));
+
+    return { symptoms, doctorName };
   }
 
   // Tìm bác sĩ có lịch trống ngay lập tức (cho khám gấp)

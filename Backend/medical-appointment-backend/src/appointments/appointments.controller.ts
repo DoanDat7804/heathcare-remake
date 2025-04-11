@@ -9,16 +9,19 @@ export class AppointmentsController {
   constructor(private appointmentsService: AppointmentsService) {}
 
   @Post()
-  create(@Body() body: any, @Request() req) {
-    return this.appointmentsService.create(body, req.user);
+  async create(@Body() body: any, @Request() req) {
+    console.log('req.user:', req.user);
+    return await this.appointmentsService.create(body, req.user);
   }
 
   @Get('me')
-  getMyAppointments(@Request() req) {
+  async getMyAppointments(@Request() req) {
     if (req.user.role === 'patient') {
-      return this.appointmentsService.findByPatient(req.user.userId);
+      const result =  await this.appointmentsService.findByPatient(req.user.id);
+      console.log(result, req.user)
+      return result
     } else if (req.user.role === 'doctor') {
-      return this.appointmentsService.findByDoctor(req.user.userId);
+      return await this.appointmentsService.findByDoctor(req.user.userId);
     }
   }
 

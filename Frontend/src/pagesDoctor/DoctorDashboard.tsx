@@ -5,8 +5,8 @@ import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Input } from "@/components/ui/input";
-import { getDoctor } from "@/apis/DoctorAPi"; // Import trực tiếp hàm
-import { DoctorResponseDto } from "@/apis/DoctorAPi"; // Import kiểu
+import { getDoctor } from "@/apis/Doctor"; // Import trực tiếp hàm
+import { DoctorResponseDto } from "@/apis/Doctor"; // Import kiểu
 import { appointmentApi, AppointmentResponse } from "@/apis/appointmentsAPI"; // Import API và kiểu
 import { toast } from "sonner";
 

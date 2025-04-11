@@ -18,7 +18,9 @@ export class AppointmentsService {
   ) {}
 
   // Tạo lịch hẹn
-  async create(createAppointmentDto: CreateAppointmentDto, user: any): Promise<Appointment> {
+  async create(createAppointmentDto: CreateAppointmentDto, user: any): Promise<Appointment|string> {
+    console.log('User from token:', user);
+    console.log('Querying userId:', user.id);
     if (user.role !== 'patient') {
       throw new ForbiddenException('Chỉ bệnh nhân mới đặt được lịch hẹn');
     }
@@ -33,7 +35,8 @@ export class AppointmentsService {
     }
   
     // Kiểm tra patient
-    const patient = await this.userModel.findById(user.userId).exec();
+    const patient = await this.userModel.findById(user.id).exec();
+    console.log('Patient found:', patient);
     if (!patient || !patient.isActive) {
       throw new BadRequestException('Tài khoản không hợp lệ hoặc đã bị khóa');
     }
@@ -60,7 +63,7 @@ export class AppointmentsService {
       // Tạo lịch hẹn
       const appointment = new this.appointmentModel({
         ...createAppointmentDto,
-        patientId: user.userId,
+        patientId: user.id,
         date: appointmentDate,
       });
       const savedAppointment = await appointment.save();
@@ -72,10 +75,12 @@ export class AppointmentsService {
       ]);
   
       await session.commitTransaction();
-      return savedAppointment;
+      console.log(savedAppointment)
+      return "Đặt lịch khám thành công !"
     } catch (error) {
       await session.abortTransaction();
-      throw error;
+      console.log(error)
+      return error
     } finally {
       session.endSession();
     }
@@ -83,7 +88,7 @@ export class AppointmentsService {
 
   // Lấy lịch hẹn của patient
   async findByPatient(userId: string): Promise<Appointment[]> {
-    return this.appointmentModel
+    return await this.appointmentModel
       .find({ patientId: userId })
       .populate('doctorId', 'name specialty')
       .exec();
@@ -91,7 +96,7 @@ export class AppointmentsService {
 
   // Lấy lịch hẹn của doctor
   async findByDoctor(doctorId: string): Promise<Appointment[]> {
-    return this.appointmentModel
+    return await this.appointmentModel
       .find({ doctorId })
       .populate('patientId', 'name')
       .exec();
@@ -118,7 +123,7 @@ export class AppointmentsService {
 
   // Lấy tất cả lịch hẹn (cho admin)
   async findAll(): Promise<Appointment[]> {
-    return this.appointmentModel
+    return await this.appointmentModel
       .find()
       .populate('patientId', 'name')
       .populate('doctorId', 'name specialty')

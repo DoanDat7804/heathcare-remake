@@ -8,12 +8,18 @@ import { HttpExceptionFilter } from './filters/http-exception.filter';
 dotenv.config();
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    cors: {
+      origin: '*', // 👈 Cho phép tất cả domain
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+      credentials: true,
+    },
+  });
   if (process.env.NODE_ENV === 'development' && module['hot']) {
     module['hot'].accept();
     module['hot'].dispose(() => app.close());
   }
-  app.enableCors();
+  
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,

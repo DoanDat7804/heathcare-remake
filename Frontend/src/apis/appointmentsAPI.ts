@@ -33,7 +33,7 @@ export interface CreateAppointmentRequest {
 export const appointmentApi = {
   getMyAppointments: async (token: string) => {
     try {
-      const response = await api.get('/users/me/appointments', {
+      const response = await api.get('/appointments/me', {
         headers: {
           Authorization: `Bearer ${token}`,
         },

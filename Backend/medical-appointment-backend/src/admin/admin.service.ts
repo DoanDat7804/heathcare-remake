@@ -85,7 +85,7 @@ export class AdminService {
   // Quản lý Appointments
   async getAllAppointments(): Promise<AppointmentResponseDto[]> {
     const appointments = await this.appointmentsService.findAll();
-    return plainToInstance(AppointmentResponseDto, appointments);
+    return  plainToInstance(AppointmentResponseDto, appointments);
   }
 
   async updateAppointment(id: string, updateAppointmentDto: UpdateAppointmentDto): Promise<AppointmentResponseDto> {

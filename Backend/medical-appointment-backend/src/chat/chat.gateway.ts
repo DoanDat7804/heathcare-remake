@@ -8,11 +8,11 @@ export class ChatGateway {
 
   @SubscribeMessage('sendMessage')
   async handleMessage(
-    @MessageBody() data: { senderId: string; receiverId: string; content: string },
+    @MessageBody() data: { user_msg: string },
     @ConnectedSocket() client: Socket,
   ) {
-    const message = await this.chatService.createMessage(data.senderId, data.receiverId, data.content);
+    console.log(data)
+    const message = await this.chatService.createMessage(data);
     client.emit('newMessage', message); // Gửi lại cho người gửi
-    client.to(data.receiverId).emit('newMessage', message); // Gửi cho người nhận
   }
 }

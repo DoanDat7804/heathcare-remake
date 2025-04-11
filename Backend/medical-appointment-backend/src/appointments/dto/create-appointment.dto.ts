@@ -23,4 +23,5 @@ export class CreateAppointmentDto {
   timeSlot: string;
 
   symptoms?: string[];
+  
 }

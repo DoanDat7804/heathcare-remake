@@ -10,7 +10,7 @@ import { DoctorSchema } from './schemas/doctor.schema';
     MongooseModule.forFeature([{ name: 'Doctor', schema: DoctorSchema }]),
   ],
   controllers: [DoctorsController],
-  providers: [DoctorsService],
-  exports: [DoctorsService], // Export service nếu cần sử dụng ở module khác
+  providers: [DoctorsService,],
+  exports: [DoctorsService, MongooseModule], // Export service nếu cần sử dụng ở module khác
 })
 export class DoctorsModule {}

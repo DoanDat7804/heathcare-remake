@@ -79,4 +79,21 @@ export class DoctorsService {
     console.log('Hashed password:', hashedPassword);
     return hashedPassword;
   }
+
+  async findBySpecialty(specialty: string): Promise<DoctorResponseDto[]> {
+    const keyword = specialty.trim().normalize('NFC');
+    const doctors = await this.doctorModel.find({
+      specialty: { $regex: keyword, $options: 'i' }
+    }).exec();
+  
+    if (!doctors || doctors.length === 0) {
+      const allDoctors = await this.doctorModel.find().exec();
+      console.log('Available specialties:', allDoctors.map(d => d));
+    }
+  
+    return doctors.map((doctor) => this.toDoctorResponseDto(doctor));
+  }
+  
+  
+
 }

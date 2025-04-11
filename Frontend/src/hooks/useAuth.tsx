@@ -1,13 +1,16 @@
+// src/hooks/useAuth.ts
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { toast } from 'sonner';
 import { authApi } from '@/apis/authApi';
+import { usersApi, UserResponse } from '@/apis/usersAPI'; // Thêm import
 import { jwtDecode } from 'jwt-decode';
 
 interface User {
-  id: string; // Thay number bằng string vì sub là chuỗi
+  id: string;
   name: string;
   email: string;
   role: string;
+  phone?: string; // Thêm phone vào interface
 }
 
 interface AuthContextType {
@@ -44,18 +47,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         throw new Error("Không nhận được access token từ server");
       }
 
-      // Giải mã token để lấy thông tin user
+      // Giải mã token để lấy ID
       const decodedToken: any = jwtDecode(response.access_token);
+      const token = response.access_token;
+
+      // Gọi API để lấy thông tin đầy đủ của user
+      const userData = await usersApi.getById(decodedToken.sub, token);
       const formattedUser: User = {
-        id: decodedToken.sub || "", // "sub" là ID trong JWT
-        name: decodedToken.name || "Unknown", // Nếu không có name thì dùng mặc định
-        email: decodedToken.email || email, // Dùng email từ input nếu cần
+        id: userData._id,
+        name: userData.name,
+        email: userData.email,
         role: decodedToken.role || "patient",
+        phone: userData.phone, // Lấy phone từ API
       };
 
       setUser(formattedUser);
       localStorage.setItem('user', JSON.stringify(formattedUser));
-      localStorage.setItem('token', response.access_token);
+      localStorage.setItem('token', token);
       toast.success("Đăng nhập thành công!");
     } catch (error: any) {
       toast.error("Đăng nhập thất bại: " + (error.message || "Lỗi không xác định"));

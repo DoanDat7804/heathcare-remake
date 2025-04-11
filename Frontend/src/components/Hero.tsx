@@ -38,7 +38,7 @@ const Hero = () => {
               Đội ngũ y bác sĩ giàu kinh nghiệm cùng trang thiết bị hiện đại, mang đến dịch vụ y tế tốt nhất cho bạn và gia đình.
             </p>
             <div className="flex flex-wrap gap-4 animate-slide-in animate-delay-200">
-            <Link to="/booking">
+            <Link to="/chat">
               <Button className="bg-hospital-500 hover:bg-hospital-600 text-white rounded-full px-8 py-6" size="lg">
                 <Calendar className="mr-2 h-5 w-5" />
                   Đặt Lịch Khám Ngay

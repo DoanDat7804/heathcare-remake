@@ -37,7 +37,6 @@ import { User, UserSchema } from './users/schemas/user.schema';
     AdminModule,
     ChatModule,
     MongooseModule.forFeature([
-      { name: Doctor.name, schema: DoctorSchema },
       { name: Appointment.name, schema: AppointmentSchema },
       { name: User.name, schema: UserSchema },
     ]),

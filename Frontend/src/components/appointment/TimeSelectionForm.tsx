@@ -13,7 +13,7 @@ interface TimeInfo {
 interface TimeSelectionFormProps {
   onSubmit: (data: TimeInfo) => void;
   initialData: TimeInfo;
-  doctors: DoctorResponseDto[] | undefined; // Cho phép undefined
+  doctors: DoctorResponseDto[] | undefined;
 }
 
 const TimeSelectionForm = ({ onSubmit, initialData, doctors }: TimeSelectionFormProps) => {
@@ -26,17 +26,19 @@ const TimeSelectionForm = ({ onSubmit, initialData, doctors }: TimeSelectionForm
     { day: "Tue", date: "11", fullDate: "2025-04-11" },
     { day: "Wed", date: "12", fullDate: "2025-04-12" },
   ];
-  const timeSlots = ["09:00-10:00", "10:00-11:00", "14:00-15:00"];
+
+  // Tạo 24 khung giờ
+  const timeSlots = Array.from({ length: 24 }, (_, i) => {
+    const hour = i.toString().padStart(2, "0");
+    return `${hour}:00`;
+  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({
-      selectedDate,
-      selectedTime,
-      selectedDoctor,
-    });
+    console.log("TimeSelectionForm data:", { selectedDate, selectedTime, selectedDoctor });
+    onSubmit({ selectedDate, selectedTime, selectedDoctor });
   };
-
+  
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>

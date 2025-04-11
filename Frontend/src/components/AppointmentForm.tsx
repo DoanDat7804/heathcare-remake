@@ -16,11 +16,11 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { appointmentApi } from "@/apis/appointmentsAPI";
-import { getDoctors, DoctorResponseDto } from "@/apis/DoctorAPi";
+import { getDoctors, DoctorResponseDto } from "@/apis/Doctor";
 import AppointmentSteps from "./appointment/AppointmentSteps";
 import PatientInfoForm from "./appointment/PatientInfoForm";
 import TimeSelectionForm from "./appointment/TimeSelectionForm";
-import { usersApi } from "@/apis/usersAPI";
+import { usersApi, UpdateUserRequest } from "@/apis/usersAPI";
 
 interface PatientInfo {
   name: string;
@@ -78,9 +78,10 @@ const AppointmentForm = () => {
 
   useEffect(() => {
     if (isAuthenticated && user && !authLoading) {
+      console.log("User data:", user); // Debug để kiểm tra
       setPatientInfo({
         name: user.name || "",
-        phone: "",
+        phone: user.phone || "", // Sử dụng phone từ user
         email: user.email || "",
         serviceType: "",
         note: "",
@@ -118,56 +119,67 @@ const AppointmentForm = () => {
       navigate("/auth");
       return;
     }
-
-    setTimeInfo(data);
-    await handleSubmit({ preventDefault: () => {} } as React.FormEvent);
+  
+    console.log("Received data in handleTimeSelectionSubmit:", data);
+    setTimeInfo(data); // Vẫn cập nhật state để hiển thị giao diện nếu cần
+    await handleSubmit({ preventDefault: () => {}, timeInfo: data } as any); // Truyền data trực tiếp
   };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  
+  // Sửa handleSubmit để nhận timeInfo từ tham số nếu có
+  const handleSubmit = async (e: React.FormEvent & { timeInfo?: TimeInfo }) => {
     e.preventDefault();
-
+  
+    const effectiveTimeInfo = e.timeInfo || timeInfo; // Ưu tiên dữ liệu từ tham số
+    console.log("Effective TimeInfo:", effectiveTimeInfo);
+  
     if (!isAuthenticated) {
       toast.info("Vui lòng đăng nhập để đặt lịch!");
       navigate("/auth");
       return;
     }
-
+  
     if (!patientInfo.name || !patientInfo.phone || !patientInfo.serviceType) {
       toast.error("Vui lòng điền đầy đủ thông tin cá nhân và loại dịch vụ!");
       setActiveTab("info");
       return;
     }
-
-    if (!timeInfo.selectedDate || !timeInfo.selectedTime) {
+  
+    if (!effectiveTimeInfo.selectedDate || !effectiveTimeInfo.selectedTime) {
       toast.error("Vui lòng chọn ngày và giờ khám!");
       setActiveTab("time");
       return;
     }
-
-    if (!timeInfo.selectedDoctor) {
+  
+    if (!effectiveTimeInfo.selectedDoctor) {
       toast.error("Vui lòng chọn bác sĩ!");
       setActiveTab("time");
       return;
     }
-
+  
     try {
       const token = localStorage.getItem("token") || "";
-      await appointmentApi.createAppointment(
-        {
-          doctorId: timeInfo.selectedDoctor,
-          serviceType: patientInfo.serviceType,
-          date: timeInfo.selectedDate,
-          timeSlot: timeInfo.selectedTime,
-          note: patientInfo.note || undefined,
-          symptoms: patientInfo.symptoms?.length ? patientInfo.symptoms : undefined,
-        },
-        token
-      );
-
+      // Chuyển đổi timeSlot thành định dạng HH:MM-HH:MM
+      const startTime = effectiveTimeInfo.selectedTime; // "03:00"
+      const [startHour, startMinute] = startTime.split(":"); // ["03", "00"]
+      const endHour = (parseInt(startHour) + 1).toString().padStart(2, "0"); // "04"
+      const timeSlotFormatted = `${startTime}-${endHour}:${startMinute}`; // "03:00-04:00"
+  
+      const appointmentData = {
+        doctorId: effectiveTimeInfo.selectedDoctor,
+        serviceType: patientInfo.serviceType,
+        date: effectiveTimeInfo.selectedDate, // "2025-04-11"
+        timeSlot: timeSlotFormatted, // "03:00-04:00"
+        note: patientInfo.note || undefined,
+        symptoms: patientInfo.symptoms?.length ? patientInfo.symptoms : undefined,
+      };
+      console.log("Data sent to API:", appointmentData);
+      const response = await appointmentApi.createAppointment(appointmentData, token);
+      console.log("API response:", response);
+  
       toast.success("Đặt lịch thành công! Chúng tôi sẽ liên hệ với bạn sớm nhất.");
       setPatientInfo({
         name: user?.name || "",
-        phone: "",
+        phone: user?.phone || "",
         email: user?.email || "",
         serviceType: "",
         note: "",
@@ -175,8 +187,9 @@ const AppointmentForm = () => {
       });
       setTimeInfo({ selectedDate: null, selectedTime: null, selectedDoctor: null });
       setActiveTab("info");
-    } catch (error) {
-      toast.error("Đặt lịch thất bại!");
+    } catch (error: any) {
+      console.error("Error from API:", error.response?.data || error);
+      toast.error("Đặt lịch thất bại: " + (error.response?.data?.message || "Lỗi không xác định"));
     }
   };
 

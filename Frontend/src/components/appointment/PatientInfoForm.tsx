@@ -9,13 +9,13 @@ interface PatientInfo {
   name: string;
   phone: string;
   email: string;
-  serviceType: string; // Đổi từ service sang serviceType
+  serviceType: string;
   note: string;
-  symptoms?: string[]; // Thêm trường symptoms (tùy chọn)
+  symptoms?: string[];
 }
 
 interface PatientInfoFormProps {
-  onSubmit: (data: PatientInfo) => void;
+  onSubmit: (data: PatientInfo) => Promise<void>;
   initialData: PatientInfo;
 }
 
@@ -30,9 +30,9 @@ const PatientInfoForm = ({ onSubmit, initialData }: PatientInfoFormProps) => {
     setFormData({ ...formData, serviceType: value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit(formData);
+    await onSubmit(formData);
   };
 
   return (
@@ -70,17 +70,17 @@ const PatientInfoForm = ({ onSubmit, initialData }: PatientInfoFormProps) => {
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="serviceType">Loại dịch vụ khám</Label> {/* Đổi label */}
+        <Label htmlFor="serviceType">Loại dịch vụ khám</Label>
         <Select value={formData.serviceType} onValueChange={handleServiceChange} required>
           <SelectTrigger>
             <SelectValue placeholder="Chọn loại dịch vụ" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="general">Khám tổng quát (Đánh giá tình trạng sức khỏe chung)</SelectItem>
-            <SelectItem value="internal">Khám nội khoa (Vấn đề về các cơ quan bên trong cơ thể)</SelectItem>
-            <SelectItem value="pediatric">Khám nhi (Khám sức khỏe dành cho trẻ em)</SelectItem>
-            <SelectItem value="gynecology">Khám sản phụ khoa (Khám sức khỏe liên quan đến hệ sinh sản của phụ nữ)</SelectItem>
-            <SelectItem value="cardiology">Khám tim mạch (Kiểm tra sức khỏe của hệ tim mạch)</SelectItem>
+            <SelectItem value="general">Khám tổng quát</SelectItem>
+            <SelectItem value="internal">Khám nội khoa</SelectItem>
+            <SelectItem value="pediatric">Khám nhi</SelectItem>
+            <SelectItem value="gynecology">Khám sản phụ khoa</SelectItem>
+            <SelectItem value="cardiology">Khám tim mạch</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -94,16 +94,6 @@ const PatientInfoForm = ({ onSubmit, initialData }: PatientInfoFormProps) => {
           onChange={handleChange}
         ></textarea>
       </div>
-      {/* Nếu muốn hỗ trợ symptoms, thêm trường sau */}
-      {/* <div className="space-y-2">
-        <Label htmlFor="symptoms">Triệu chứng (cách nhau bằng dấu phẩy)</Label>
-        <Input
-          id="symptoms"
-          placeholder="Ví dụ: sốt, ho"
-          value={formData.symptoms?.join(", ") || ""}
-          onChange={(e) => setFormData({ ...formData, symptoms: e.target.value.split(", ").filter(Boolean) })}
-        />
-      </div> */}
       <Button type="submit" className="w-full bg-hospital-500 hover:bg-hospital-600 text-white">
         <Calendar className="mr-2 h-4 w-4" />
         Tiếp tục

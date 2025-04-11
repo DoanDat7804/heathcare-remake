@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { io, Socket } from "socket.io-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Send, X, MessageCircle } from "lucide-react";
@@ -21,88 +22,116 @@ const ChatDetail = () => {
     },
   ]);
   const [inputText, setInputText] = useState("");
+  const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [docList, setDocList] = useState<any[]>([]);
 
-  // Giả định token được lưu trong localStorage sau khi đăng nhập
-  const token = localStorage.getItem("access_token") || "";
-  
-  // Tạo session ID (có thể lấy từ user ID trong token hoặc tạo ngẫu nhiên)
+  const token = localStorage.getItem("token") || "";
   const sessionId = useRef(
     token ? JSON.parse(atob(token.split(".")[1])).sub : Math.random().toString(36).substring(7)
   ).current;
 
-  // Cuộn xuống tin nhắn mới nhất
+  useEffect(() => {
+    socketRef.current = io("http://localhost:3000", {
+      transports: ["websocket"],
+    });
+
+    socketRef.current.on("connect", () => {
+      console.log("✅ Socket.io connected");
+    });
+
+    socketRef.current.on("newMessage", (data) => {
+      const now = new Date().toLocaleTimeString();
+    
+      // Nếu backend trả về danh sách bác sĩ
+      if (Array.isArray(data) && data.length > 0 && data[0].role === "doctor") {
+        setDocList(data); // Lưu lại danh sách bác sĩ
+    
+        const headerMessage: Message = {
+          id: Date.now(),
+          content: "Đây là chuyên khoa phù hợp và một số bác sĩ phù hợp với mô tả bệnh của bạn.",
+          sender: "bot",
+          timestamp: now,
+        };
+    
+        const doctorCards = data.map((doctor: any) => {
+          const content = `
+    🩺 **${doctor.name}**
+    🏥 ${doctor.hospital.name}
+    📍 ${doctor.hospital.address}
+    📞 ${doctor.phone}
+    📚 Chuyên khoa: ${doctor.specialty}
+    🎓 Kinh nghiệm: ${doctor.experience} năm
+    🗣 Ngôn ngữ: ${doctor.languages?.join(", ")}
+          `;
+    
+          return {
+            id: Date.now() + Math.random(),
+            content,
+            sender: "bot",
+            timestamp: now,
+          } as Message;
+        });
+    
+        setMessages((prev) => [...prev, headerMessage, ...doctorCards]);
+      } else {
+        const botMessage: Message = {
+          id: Date.now(),
+          content: data,
+          sender: "bot",
+          timestamp: now,
+        };
+    
+        setMessages((prev) => [...prev, botMessage]);
+      }
+    });
+
+    socketRef.current.on("connect_error", (error) => {
+      console.error("❌ Socket.io connection error:", error);
+    });
+
+    socketRef.current.on("disconnect", () => {
+      console.log("🛑 Socket.io disconnected");
+    });
+
+    return () => {
+      socketRef.current?.disconnect();
+    };
+  }, []);
+
   useEffect(() => {
     if (isOpen) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, isOpen]);
 
-  // Gửi tin nhắn đến backend webhook
-  const handleSendText = async () => {
-    if (!inputText.trim()) return;
-
+  const handleSendText = () => {
+    if (!inputText.trim() || !socketRef.current || !socketRef.current.connected) return;
+  
     const userMessage: Message = {
-      id: messages.length + 1,
+      id: Date.now(),
       content: inputText,
       sender: "user",
       timestamp: new Date().toLocaleTimeString(),
     };
-
+  
     setMessages((prev) => [...prev, userMessage]);
+  
+    const symptoms = [...new Set(docList.map((doc) => doc.specialty))];
+  
+    socketRef.current.emit("sendMessage", {
+      user_msg: inputText,
+      token: token,
+      symptoms: ["Tired"],
+      docList: docList.length > 0 ? docList : undefined,
+    });
+  
     setInputText("");
-
-    try {
-      const response = await fetch("https://cf9c-2405-4803-fc1b-29c0-981c-7b79-87bd-227b.ngrok-free.app/dialogflow-webhook", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${token}`, // Gửi token JWT
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          queryInput: {
-            text: {
-              text: inputText,
-              languageCode: "vi",
-            },
-          },
-          sessionId: sessionId, // Gửi session ID để duy trì ngữ cảnh
-        }),
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error("Vui lòng đăng nhập lại để tiếp tục.");
-        }
-        throw new Error("Có lỗi từ server. Vui lòng thử lại.");
-      }
-
-      const data = await response.json();
-      const botResponseText = data.fulfillmentText;
-
-      const botMessage: Message = {
-        id: messages.length + 2,
-        content: botResponseText,
-        sender: "bot",
-        timestamp: new Date().toLocaleTimeString(),
-      };
-
-      setMessages((prev) => [...prev, botMessage]);
-    } catch (error) {
-      console.error("Error calling webhook:", error);
-      const errorMessage: Message = {
-        id: messages.length + 2,
-        content: error.message || "Có lỗi xảy ra khi liên lạc với chatbot. Vui lòng thử lại.",
-        sender: "bot",
-        timestamp: new Date().toLocaleTimeString(),
-      };
-      setMessages((prev) => [...prev, errorMessage]);
-    }
   };
+  
 
   return (
     <>
-      {/* Nút mở chat */}
       <Button
         onClick={() => setIsOpen(true)}
         className="fixed bottom-6 right-6 bg-hospital-500 text-white rounded-full p-4 shadow-lg"
@@ -110,10 +139,8 @@ const ChatDetail = () => {
         <MessageCircle className="h-6 w-6" />
       </Button>
 
-      {/* Giao diện chat khi mở */}
       {isOpen && (
         <div className="fixed bottom-20 right-6 w-96 bg-white rounded-xl shadow-xl flex flex-col h-[70vh]">
-          {/* Header */}
           <div className="bg-hospital-500 text-white p-3 flex justify-between items-center">
             <h2 className="text-lg font-semibold">Chatbot HealthCare</h2>
             <Button variant="ghost" onClick={() => setIsOpen(false)} className="text-white p-1">
@@ -121,7 +148,6 @@ const ChatDetail = () => {
             </Button>
           </div>
 
-          {/* Khu vực hiển thị tin nhắn */}
           <div className="flex-1 p-4 overflow-y-auto">
             {messages.map((message) => (
               <div
@@ -141,7 +167,6 @@ const ChatDetail = () => {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Khu vực nhập tin nhắn */}
           <div className="p-3 border-t flex items-center gap-2">
             <Input
               value={inputText}

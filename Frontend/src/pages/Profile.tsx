@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Label } from "@/components/ui/label";
@@ -7,7 +7,8 @@ import { Calendar } from "lucide-react";
 import { toast } from "sonner";
 import TimeSelectionForm from "@/components/appointment/TimeSelectionForm";
 import PatientInfoForm from "@/components/appointment/PatientInfoForm";
-import { useAvatar } from "@/pages/AvatarContext"; // Import useAvatar
+import { useAvatar } from "@/pages/AvatarContext";
+import { appointmentApi } from "@/apis/appointmentsAPI";
 
 interface Appointment {
   id: number;
@@ -16,11 +17,6 @@ interface Appointment {
   doctor: string;
   service: string;
 }
-
-const initialAppointments: Appointment[] = [
-  { id: 1, date: "2023-11-01", time: "09:00", doctor: "Dr. Mai Lịch Kiên", service: "Khám tổng quát" },
-  { id: 2, date: "2023-11-03", time: "14:30", doctor: "Dr. Minh Anh", service: "Khám tim mạch" },
-];
 
 const initialUserData = {
   name: "Nguyễn Văn A",
@@ -32,7 +28,7 @@ const initialUserData = {
 
 const Profile: React.FC = () => {
   const [userData] = useState(initialUserData);
-  const [appointments, setAppointments] = useState<Appointment[]>(initialAppointments);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [showBookingForm, setShowBookingForm] = useState(false);
   const [step, setStep] = useState<"info" | "time">("info");
   const [patientInfo, setPatientInfo] = useState({
@@ -44,13 +40,37 @@ const Profile: React.FC = () => {
   });
   const { avatar, setAvatar } = useAvatar();
 
-  // Xử lý khi chọn ảnh mới
+  // Fetch lịch hẹn từ API khi component mount
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const data = await appointmentApi.getMyAppointments(token);
+        const formattedData = data.map((item: any, index: number) => ({
+          id: index + 1,
+          date: item.date || "Chưa rõ",
+          time: item.timeSlot || "Chưa rõ",
+          doctor: item.doctorId?.name || "Bác sĩ chưa xác định",
+          service: item.serviceType || "Chưa rõ dịch vụ",
+        }));
+
+        setAppointments(formattedData);
+      } catch (error) {
+        console.error("Lỗi khi lấy lịch hẹn:", error);
+      }
+    };
+
+    fetchAppointments();
+  }, []);
+
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
       reader.onloadend = () => {
-        setAvatar(reader.result as string); // Cập nhật ảnh trong context
+        setAvatar(reader.result as string);
         toast.success("Cập nhật ảnh đại diện thành công!");
       };
       reader.readAsDataURL(file);
@@ -67,7 +87,7 @@ const Profile: React.FC = () => {
       id: appointments.length + 1,
       date: data.selectedDate || "",
       time: data.selectedTime || "",
-      doctor: data.selectedDoctor ? `Dr. ${data.selectedDoctor}` : "Bất kỳ",
+      doctor: data.selectedDoctor ? `Dr. ${data.selectedDoctor}` : "Bác sĩ chưa xác định",
       service: patientInfo.service,
     };
     setAppointments([...appointments, newAppointment]);
@@ -91,7 +111,7 @@ const Profile: React.FC = () => {
           <h2 className="text-2xl font-semibold text-gray-800 mb-6">Thông Tin Cá Nhân</h2>
           <div className="flex flex-col items-center mb-6">
             <img
-              src={avatar || userData.avatar} // Hiển thị ảnh từ context hoặc dữ liệu mặc định
+              src={avatar || userData.avatar}
               alt="Avatar"
               className="w-24 h-24 rounded-full object-cover mb-4"
             />
@@ -192,6 +212,7 @@ const Profile: React.FC = () => {
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 };
