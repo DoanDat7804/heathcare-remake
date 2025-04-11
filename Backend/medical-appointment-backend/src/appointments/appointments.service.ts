@@ -22,54 +22,62 @@ export class AppointmentsService {
     if (user.role !== 'patient') {
       throw new ForbiddenException('Chỉ bệnh nhân mới đặt được lịch hẹn');
     }
-
+  
+    // Validate date và timeSlot
+    const appointmentDate = new Date(createAppointmentDto.date);
+    if (appointmentDate < new Date()) {
+      throw new BadRequestException('Ngày đặt lịch phải trong tương lai');
+    }
+    if (!/^\d{2}:\d{2}-\d{2}:\d{2}$/.test(createAppointmentDto.timeSlot)) {
+      throw new BadRequestException('Khung giờ không hợp lệ (định dạng: HH:MM-HH:MM)');
+    }
+  
+    // Kiểm tra patient
+    const patient = await this.userModel.findById(user.userId).exec();
+    if (!patient || !patient.isActive) {
+      throw new BadRequestException('Tài khoản không hợp lệ hoặc đã bị khóa');
+    }
+  
+    // Kiểm tra doctor
+    const doctor = await this.doctorModel.findById(createAppointmentDto.doctorId).exec();
+    if (!doctor || !doctor.isActive) {
+      throw new BadRequestException('Bác sĩ không tồn tại hoặc không hoạt động');
+    }
+  
+    // Kiểm tra khung giờ trùng lặp trong transaction
+    const session = await this.appointmentModel.startSession();
     try {
-      // Kiểm tra tài khoản patient
-      const patient = await this.userModel.findById(user.userId).exec();
-      if (!patient || !patient.isActive) {
-        throw new BadRequestException('Tài khoản không hợp lệ hoặc đã bị khóa');
-      }
-
-      // Kiểm tra bác sĩ có tồn tại không
-      const doctorExists = await this.doctorModel.findById(createAppointmentDto.doctorId);
-      if (!doctorExists) {
-        throw new BadRequestException('Bác sĩ không tồn tại');
-      }
-
-      // Kiểm tra lịch hẹn trùng
+      session.startTransaction();
       const existingAppointment = await this.appointmentModel.findOne({
         doctorId: createAppointmentDto.doctorId,
-        date: new Date(createAppointmentDto.date),
+        date: appointmentDate,
         timeSlot: createAppointmentDto.timeSlot,
-      });
+      }).exec();
       if (existingAppointment) {
         throw new BadRequestException('Khung giờ này đã được đặt');
       }
-
-      // Tạo lịch hẹn mới
+  
+      // Tạo lịch hẹn
       const appointment = new this.appointmentModel({
         ...createAppointmentDto,
         patientId: user.userId,
-        date: new Date(createAppointmentDto.date), // Chuyển string sang Date
-        status: 'pending', // Đặt mặc định status
+        date: appointmentDate,
       });
-
       const savedAppointment = await appointment.save();
-
-      // Cập nhật reference trong User và Doctor
+  
+      // Cập nhật reference
       await Promise.all([
         this.userModel.findByIdAndUpdate(user.userId, { $push: { appointments: savedAppointment._id } }),
         this.doctorModel.findByIdAndUpdate(createAppointmentDto.doctorId, { $push: { appointments: savedAppointment._id } }),
       ]);
-
+  
+      await session.commitTransaction();
       return savedAppointment;
     } catch (error) {
-      if (error instanceof mongoose.Error.ValidationError) {
-        throw new BadRequestException(
-          Object.values(error.errors).map(err => err.message).join(', ')
-        );
-      }
-      throw error; // Ném lại các lỗi khác để xử lý ở tầng trên
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
     }
   }
 

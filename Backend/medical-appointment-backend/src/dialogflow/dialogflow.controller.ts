@@ -1,6 +1,6 @@
-// src/dialogflow/dialogflow.controller.ts
 import { Types } from 'mongoose';
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { DialogflowService } from './dialogflow.service';
 
 interface DialogflowResponse {
@@ -11,13 +11,13 @@ interface DialogflowResponse {
     parameters?: Record<string, any>;
   }[];
 }
-
 @Controller('dialogflow-webhook')
 export class DialogflowController {
   constructor(private readonly dialogflowService: DialogflowService) {}
 
   @Post()
-  async handleWebhook(@Body() body: any): Promise<DialogflowResponse> {
+  @UseGuards(AuthGuard('jwt')) // Thêm middleware xác thực JWT
+  async handleWebhook(@Body() body: any, @Request() req: any): Promise<DialogflowResponse> {
     const intentName = body.queryResult.intent.displayName;
     const parameters = body.queryResult.parameters || {};
     const contexts = body.queryResult.outputContexts || [];
@@ -25,6 +25,14 @@ export class DialogflowController {
 
     let responseText = '';
     let outputContexts: { name: string; lifespanCount: number; parameters?: any }[] = [];
+
+    // Lấy patientId từ token JWT
+    const patientId = req.user?.sub; // sub là _id từ AuthService
+
+    if (!patientId) {
+      responseText = 'Vui lòng đăng nhập để tiếp tục.';
+      return { fulfillmentText: responseText };
+    }
 
     switch (intentName) {
       case 'AskCondition':
@@ -40,32 +48,45 @@ export class DialogflowController {
             {
               name: `${session}/contexts/awaiting_doctor_selection`,
               lifespanCount: 5,
-              parameters: { specialty, symptoms },
+              parameters: { specialty, symptoms, patientId },
             },
           ];
         }
         break;
 
-        case 'BookSpecificDoctor':
-          const doctorName = parameters.doctor_name;
-          const doctor = await this.dialogflowService.findDoctorByName(doctorName);
-          if (!doctor) {
-            responseText = `Không tìm thấy bác sĩ ${doctorName}. Vui lòng thử lại.`;
-          } else {
-            const doctorId = (doctor._id as Types.ObjectId).toString();
-            responseText = `Vui lòng cho tôi biết ngày bạn muốn gặp ${doctorName}.`;
-            outputContexts = [
-              {
-                name: `${session}/contexts/awaiting_date`,
-                lifespanCount: 5,
-                parameters: { doctorId, doctorName },
-              },
-            ];
-          }
-          break;
+      case 'AskConditionDetails':
+        const duration = parameters.duration || 'chưa xác định';
+        const severity = parameters.severity || 'chưa xác định';
+        responseText = `Triệu chứng của bạn kéo dài ${duration} và mức độ nghiêm trọng là ${severity}. Tôi sẽ lưu thông tin này.`;
+        outputContexts = [
+          {
+            name: `${session}/contexts/condition_details_collected`,
+            lifespanCount: 5,
+            parameters: { duration, severity },
+          },
+        ];
+        break;
+
+      case 'BookSpecificDoctor':
+        const doctorName = parameters.doctor_name;
+        const doctor = await this.dialogflowService.findDoctorByName(doctorName);
+        if (!doctor) {
+          responseText = `Không tìm thấy bác sĩ ${doctorName}. Vui lòng thử lại.`;
+        } else {
+          const doctorId = (doctor._id as Types.ObjectId).toString();
+          responseText = `Vui lòng cho tôi biết ngày bạn muốn gặp ${doctorName}.`;
+          outputContexts = [
+            {
+              name: `${session}/contexts/awaiting_date`,
+              lifespanCount: 5,
+              parameters: { doctorId, doctorName, patientId },
+            },
+          ];
+        }
+        break;
 
       case 'ProvideDate':
-        const date = parameters.date.split('T')[0]; // Lấy phần ngày (YYYY-MM-DD)
+        const date = parameters.date.split('T')[0];
         const dateContext = contexts.find((c) => c.name.endsWith('awaiting_date'));
         const doctorId = dateContext.parameters.doctorId;
         const doctorNameFromDate = dateContext.parameters.doctorName;
@@ -74,13 +95,13 @@ export class DialogflowController {
           {
             name: `${session}/contexts/awaiting_time`,
             lifespanCount: 5,
-            parameters: { doctorId, doctorName: doctorNameFromDate, date },
+            parameters: { doctorId, doctorName: doctorNameFromDate, date, patientId },
           },
         ];
         break;
 
       case 'ProvideTime':
-        const timeSlot = parameters.time; // Giả định timeSlot là chuỗi như "08:00"
+        const timeSlot = parameters.time;
         const timeContext = contexts.find((c) => c.name.endsWith('awaiting_time'));
         const doctorIdFromTime = timeContext.parameters.doctorId;
         const doctorNameFromTime = timeContext.parameters.doctorName;
@@ -100,12 +121,10 @@ export class DialogflowController {
             {
               name: `${session}/contexts/awaiting_time`,
               lifespanCount: 5,
-              parameters: { doctorId: doctorIdFromTime, doctorName: doctorNameFromTime, date: bookingDate },
+              parameters: { doctorId: doctorIdFromTime, doctorName: doctorNameFromTime, date: bookingDate, patientId },
             },
           ];
         } else {
-          // Giả định patientId cố định (cần thay bằng logic thực tế)
-          const patientId = 'some-patient-id';
           const bookingSuccess = await this.dialogflowService.bookAppointment(
             patientId,
             doctorIdFromTime,
@@ -118,6 +137,23 @@ export class DialogflowController {
             : `Có lỗi xảy ra khi đặt lịch. Vui lòng thử lại.`;
         }
         break;
+
+    //   case 'RequestUrgentAppointment':
+    //     const urgentDoctors = await this.dialogflowService.findAvailableDoctorsNow();
+    //     if (urgentDoctors.length > 0) {
+    //       const doctorNames = urgentDoctors.map((d) => d.name).join(', ');
+    //       responseText = `Tôi đã tìm thấy các bác sĩ có thể khám ngay: ${doctorNames}. Bạn muốn đặt với ai?`;
+    //       outputContexts = [
+    //         {
+    //           name: `${session}/contexts/awaiting_urgent_doctor_selection`,
+    //           lifespanCount: 5,
+    //           parameters: { urgentDoctors: doctorNames },
+    //         },
+    //       ];
+    //     } else {
+    //       responseText = `Hiện tại không có bác sĩ nào trống cho trường hợp khẩn cấp. Bạn muốn thử lại sau không?`;
+    //     }
+    //     break;
 
       default:
         responseText = 'Xin lỗi, tôi chưa hiểu ý bạn. Bạn có thể nói lại không?';

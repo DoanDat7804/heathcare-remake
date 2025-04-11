@@ -8,7 +8,7 @@ import { NewsModule } from '../news/news.module';
 import { AppointmentsModule } from '../appointments/appointments.module';
 
 @Module({
-  imports: [UsersModule, DoctorsModule, NewsModule, AppointmentsModule],
+  imports: [AdminModule, UsersModule, DoctorsModule, NewsModule, AppointmentsModule],
   controllers: [AdminController],
   providers: [AdminService],
 })

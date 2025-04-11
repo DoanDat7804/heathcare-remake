@@ -1,6 +1,12 @@
 // src/users/dto/create-user.dto.ts
 import { IsString, IsEmail, IsPhoneNumber, IsDate, IsOptional, IsEnum, IsISO8601, Matches, IsEmpty } from 'class-validator';
 
+enum UserRole {
+  ADMIN = 'admin',
+  PATIENT = 'patient',
+}
+
+
 export class CreateUserDto {
   @IsString()
   name: string;
@@ -38,5 +44,9 @@ export class CreateUserDto {
     chronicDiseases: string[];
     currentMedications: string[];
   };
+
+  @IsEnum(UserRole)
+  @IsOptional()
+  role?: UserRole; 
 
 }

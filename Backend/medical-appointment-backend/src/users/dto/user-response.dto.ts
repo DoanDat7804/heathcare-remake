@@ -1,5 +1,5 @@
 // src/users/dto/user-response.dto.ts
-import { IsString, IsBoolean, IsOptional, IsDate, Matches } from 'class-validator';
+import { IsString, IsBoolean, IsOptional, IsDate, Matches, IsISO8601 } from 'class-validator';
 
 export class UserResponseDto {
   @IsString()
@@ -20,9 +20,9 @@ export class UserResponseDto {
   @IsBoolean()
   isActive: boolean;
 
-  @IsDate()
+  @IsISO8601() // Thay @IsDate() bằng @IsISO8601()
   @IsOptional()
-  dateOfBirth?: Date;
+  dateOfBirth?: string; // Chuyển sang string để nhận chuỗi ISO
 
   @IsOptional()
   @IsString()

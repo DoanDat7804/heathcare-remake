@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import  appointmentApi  from '../apis/appointmentsApi'; // Đảm bảo đường dẫn đúng
+import { adminApi } from '../apis/adminApi'; // Thay appointmentApi bằng adminApi
 import { toast } from 'react-toastify';
 
 // Định nghĩa interface cho Appointment dựa trên schema backend
@@ -22,10 +22,11 @@ const AppointmentManagement: React.FC = () => {
   useEffect(() => {
     const fetchAppointments = async () => {
       try {
-        const response = await appointmentApi.getAllAppointments();
-        setAppointments(response.data as Appointment[]);
+        const data = await adminApi.getAllAppointments(); // Sử dụng adminApi
+        setAppointments(data || []); // Đảm bảo luôn là mảng
       } catch (err: any) {
         toast.error('Lỗi khi tải danh sách lịch hẹn: ' + err.message);
+        setAppointments([]);
       } finally {
         setLoading(false);
       }
@@ -36,7 +37,7 @@ const AppointmentManagement: React.FC = () => {
   const handleDeleteAppointment = async (id: string) => {
     if (window.confirm('Bạn có chắc muốn xóa lịch hẹn này?')) {
       try {
-        await appointmentApi.deleteAppointment(id);
+        await adminApi.deleteAppointment(id); // Sử dụng adminApi
         setAppointments(appointments.filter(appointment => appointment._id !== id));
         toast.success('Xóa lịch hẹn thành công!');
       } catch (err: any) {
@@ -47,10 +48,10 @@ const AppointmentManagement: React.FC = () => {
 
   if (loading) return <div>Đang tải...</div>;
 
-  const filteredAppointments = appointments.filter(appointment =>
+  const filteredAppointments = Array.isArray(appointments) ? appointments.filter(appointment =>
     appointment.serviceType.toLowerCase().includes(searchTerm.toLowerCase()) ||
     new Date(appointment.date).toLocaleDateString().includes(searchTerm)
-  );
+  ) : [];
 
   return (
     <div>

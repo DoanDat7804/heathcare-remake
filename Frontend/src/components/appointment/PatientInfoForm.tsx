@@ -9,8 +9,9 @@ interface PatientInfo {
   name: string;
   phone: string;
   email: string;
-  service: string;
+  serviceType: string; // Đổi từ service sang serviceType
   note: string;
+  symptoms?: string[]; // Thêm trường symptoms (tùy chọn)
 }
 
 interface PatientInfoFormProps {
@@ -26,7 +27,7 @@ const PatientInfoForm = ({ onSubmit, initialData }: PatientInfoFormProps) => {
   };
 
   const handleServiceChange = (value: string) => {
-    setFormData({ ...formData, service: value });
+    setFormData({ ...formData, serviceType: value });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -69,10 +70,10 @@ const PatientInfoForm = ({ onSubmit, initialData }: PatientInfoFormProps) => {
         />
       </div>
       <div className="space-y-2">
-        <Label htmlFor="service">Dịch vụ khám</Label>
-        <Select value={formData.service} onValueChange={handleServiceChange} required>
+        <Label htmlFor="serviceType">Loại dịch vụ khám</Label> {/* Đổi label */}
+        <Select value={formData.serviceType} onValueChange={handleServiceChange} required>
           <SelectTrigger>
-            <SelectValue placeholder="Chọn dịch vụ" />
+            <SelectValue placeholder="Chọn loại dịch vụ" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="general">Khám tổng quát (Đánh giá tình trạng sức khỏe chung)</SelectItem>
@@ -93,6 +94,16 @@ const PatientInfoForm = ({ onSubmit, initialData }: PatientInfoFormProps) => {
           onChange={handleChange}
         ></textarea>
       </div>
+      {/* Nếu muốn hỗ trợ symptoms, thêm trường sau */}
+      {/* <div className="space-y-2">
+        <Label htmlFor="symptoms">Triệu chứng (cách nhau bằng dấu phẩy)</Label>
+        <Input
+          id="symptoms"
+          placeholder="Ví dụ: sốt, ho"
+          value={formData.symptoms?.join(", ") || ""}
+          onChange={(e) => setFormData({ ...formData, symptoms: e.target.value.split(", ").filter(Boolean) })}
+        />
+      </div> */}
       <Button type="submit" className="w-full bg-hospital-500 hover:bg-hospital-600 text-white">
         <Calendar className="mr-2 h-4 w-4" />
         Tiếp tục

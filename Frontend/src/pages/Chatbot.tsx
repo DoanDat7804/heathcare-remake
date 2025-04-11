@@ -23,16 +23,24 @@ const ChatDetail = () => {
   const [inputText, setInputText] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Cuộn xuống tin nhắn mới nhất khi mở chat hoặc có tin nhắn mới
+  // Giả định token được lưu trong localStorage sau khi đăng nhập
+  const token = localStorage.getItem("access_token") || "";
+  
+  // Tạo session ID (có thể lấy từ user ID trong token hoặc tạo ngẫu nhiên)
+  const sessionId = useRef(
+    token ? JSON.parse(atob(token.split(".")[1])).sub : Math.random().toString(36).substring(7)
+  ).current;
+
+  // Cuộn xuống tin nhắn mới nhất
   useEffect(() => {
     if (isOpen) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, isOpen]);
 
-  // Xử lý gửi tin nhắn (chỉ thêm tin nhắn user, không gọi API)
-  const handleSendText = () => {
-    if (!inputText.trim()) return; // Ngăn gửi tin nhắn rỗng
+  // Gửi tin nhắn đến backend webhook
+  const handleSendText = async () => {
+    if (!inputText.trim()) return;
 
     const userMessage: Message = {
       id: messages.length + 1,
@@ -43,6 +51,53 @@ const ChatDetail = () => {
 
     setMessages((prev) => [...prev, userMessage]);
     setInputText("");
+
+    try {
+      const response = await fetch("https://cf9c-2405-4803-fc1b-29c0-981c-7b79-87bd-227b.ngrok-free.app/dialogflow-webhook", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`, // Gửi token JWT
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          queryInput: {
+            text: {
+              text: inputText,
+              languageCode: "vi",
+            },
+          },
+          sessionId: sessionId, // Gửi session ID để duy trì ngữ cảnh
+        }),
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("Vui lòng đăng nhập lại để tiếp tục.");
+        }
+        throw new Error("Có lỗi từ server. Vui lòng thử lại.");
+      }
+
+      const data = await response.json();
+      const botResponseText = data.fulfillmentText;
+
+      const botMessage: Message = {
+        id: messages.length + 2,
+        content: botResponseText,
+        sender: "bot",
+        timestamp: new Date().toLocaleTimeString(),
+      };
+
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (error) {
+      console.error("Error calling webhook:", error);
+      const errorMessage: Message = {
+        id: messages.length + 2,
+        content: error.message || "Có lỗi xảy ra khi liên lạc với chatbot. Vui lòng thử lại.",
+        sender: "bot",
+        timestamp: new Date().toLocaleTimeString(),
+      };
+      setMessages((prev) => [...prev, errorMessage]);
+    }
   };
 
   return (
@@ -84,7 +139,7 @@ const ChatDetail = () => {
               </div>
             ))}
             <div ref={messagesEndRef} />
-</div>
+          </div>
 
           {/* Khu vực nhập tin nhắn */}
           <div className="p-3 border-t flex items-center gap-2">

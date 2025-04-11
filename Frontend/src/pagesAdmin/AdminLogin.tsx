@@ -16,84 +16,91 @@ const AdminLogin = () => {
     e.preventDefault();
     setLoading(true);
 
-    // Lấy giá trị của email và mật khẩu từ form
     const formData = new FormData(e.currentTarget);
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
     try {
-      // Gọi API đăng nhập admin
       const response = await authApi.adminLogin(email, password);
-      
-      // Xử lý thành công (có thể lấy thêm dữ liệu từ response nếu cần)
-      toast.success("Đăng nhập thành công! Chuyển hướng đến trang quản trị...");
-      
-      // Chuyển hướng tới trang dashboard (hoặc trang quản trị tương ứng)
-      navigate("/admin/Dashboard");
+      console.log("Full API Response:", response);
+
+      if (response && response.access_token) {
+        // Kiểm tra role nếu backend trả về (giả định)
+        if (response.role && response.role !== 'admin') {
+          toast.error("Bạn không có quyền admin!");
+          setLoading(false);
+          return;
+        }
+        localStorage.setItem("adminToken", response.access_token);
+        toast.success("Đăng nhập thành công!");
+        navigate("/admin/dashboard");
+      } else {
+        toast.error("Lỗi đăng nhập: Không nhận được token.");
+      }
     } catch (error: any) {
-      // Xử lý lỗi khi đăng nhập thất bại
-      toast.error(error.response?.data?.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.");
+      console.error("Error details:", error);
+      toast.error(error.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 flex flex-col items-center justify-center p-4">
-      <Link to="/" className="absolute top-6 left-6 flex items-center text-gray-300 hover:text-white transition-colors">
+    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4">
+      <Link to="/" className="absolute top-6 left-6 flex items-center text-gray-600 hover:text-gray-900 transition-colors">
         <span className="font-medium">Trang chủ HealthCare</span>
       </Link>
-      
+
       <div className="max-w-md w-full">
         <div className="text-center mb-6">
           <div className="inline-flex flex-col items-center">
             <div className="h-16 w-16 rounded-full bg-hospital-500 flex items-center justify-center mb-2">
               <Shield className="h-8 w-8 text-white" />
             </div>
-            <h1 className="text-2xl font-display font-semibold text-white">Hệ Thống Quản Trị</h1>
-            <p className="text-gray-400 mt-1">Truy cập quản lý toàn bộ hệ thống</p>
+            <h1 className="text-2xl font-display font-semibold text-gray-900">Hệ Thống Quản Trị</h1>
+            <p className="text-gray-600 mt-1">Truy cập quản lý toàn bộ hệ thống</p>
           </div>
         </div>
-        
-        <Card className="w-full shadow-soft border-0 bg-gray-800 text-white">
+
+        <Card className="w-full shadow-soft border-gray-200 bg-white text-gray-900">
           <form onSubmit={handleLogin}>
             <CardHeader>
               <CardTitle className="text-2xl font-display">Đăng nhập Admin</CardTitle>
-              <CardDescription className="text-gray-400">
+              <CardDescription className="text-gray-600">
                 Vui lòng đăng nhập để truy cập hệ thống quản trị
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-gray-300">Email</Label>
+                <Label htmlFor="email" className="text-gray-700">Email</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 h-4 w-4" />
-                  <Input 
-                    id="email" 
+                  <Input
+                    id="email"
                     name="email"
-                    type="email" 
-                    placeholder="admin@healthcare.com" 
-                    className="pl-10 bg-gray-700 border-gray-600 text-white placeholder-gray-400" 
-                    required 
+                    type="email"
+                    placeholder="admin@healthcare.com"
+                    className="pl-10 bg-white border-gray-300 text-gray-900 placeholder-gray-400"
+                    required
                   />
                 </div>
               </div>
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password" className="text-gray-300">Mật khẩu</Label>
-                  <Link to="/admin/forgot-password" className="text-sm text-hospital-400 hover:text-hospital-300">
+                  <Label htmlFor="password" className="text-gray-700">Mật khẩu</Label>
+                  <Link to="/admin/forgot-password" className="text-sm text-hospital-500 hover:text-hospital-600">
                     Quên mật khẩu?
                   </Link>
                 </div>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 h-4 w-4" />
-                  <Input 
-                    id="password" 
+                  <Input
+                    id="password"
                     name="password"
-                    type="password" 
-                    placeholder="••••••••" 
-                    className="pl-10 bg-gray-700 border-gray-600 text-white placeholder-gray-400" 
-                    required 
+                    type="password"
+                    placeholder="••••••••"
+                    className="pl-10 bg-white border-gray-300 text-gray-900 placeholder-gray-400"
+                    required
                   />
                 </div>
               </div>
@@ -115,7 +122,7 @@ const AdminLogin = () => {
                   </>
                 )}
               </Button>
-              <div className="text-sm text-center text-gray-400">
+              <div className="text-sm text-center text-gray-600">
                 <p>Chỉ dành cho quản trị viên được ủy quyền</p>
                 <p className="mt-1">Truy cập trái phép sẽ bị xử lý theo quy định</p>
               </div>

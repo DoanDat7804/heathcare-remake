@@ -1,16 +1,19 @@
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { Calendar, Menu, X, LogIn } from "lucide-react";
+import { Calendar, Menu, X, LogIn, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link, useLocation, useNavigate } from "react-router-dom"; // Thêm useLocation
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAvatar } from "@/pages/AvatarContext";
 import Notification from "@/pages/Notification";
+import { useAuth } from "@/hooks/useAuth"; // Thêm import useAuth
 
 const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState<boolean>(false);
   const [isMenuOpen, setIsMenuOpen] = useState<boolean>(false);
   const { avatar } = useAvatar();
-  const location = useLocation(); 
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { isAuthenticated, logout } = useAuth(); // Sử dụng useAuth để kiểm tra trạng thái đăng nhập
 
   useEffect(() => {
     const handleScroll = () => {
@@ -25,8 +28,13 @@ const Navbar: React.FC = () => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Hàm kiểm tra xem đường dẫn có khớp với trang hiện tại không
   const isActive = (path: string) => location.pathname === path;
+
+  const handleLogout = () => {
+    logout();
+    setIsMenuOpen(false);
+    navigate('/auth');
+  };
 
   return (
     <header
@@ -102,21 +110,36 @@ const Navbar: React.FC = () => {
           </nav>
 
           <div className="hidden md:flex items-center gap-3">
-            <Link to="/auth">
-              <Button variant="outline" size="sm" className="border-hospital-200 text-hospital-600 hover:bg-hospital-50">
-                <LogIn className="mr-2 h-4 w-4" />
-                Đăng nhập
+            {isAuthenticated ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-hospital-200 text-hospital-600 hover:bg-hospital-50"
+                onClick={handleLogout}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Đăng xuất
               </Button>
-            </Link>
+            ) : (
+              <Link to="/auth">
+                <Button variant="outline" size="sm" className="border-hospital-200 text-hospital-600 hover:bg-hospital-50">
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Đăng nhập
+                </Button>
+              </Link>
+            )}
             <Link to="/booking">
               <Button className="bg-hospital-500 hover:bg-hospital-600 text-white rounded-full" size="sm">
                 <Calendar className="mr-2 h-4 w-4" />
                 Đặt lịch khám
               </Button>
             </Link>
-            <Link to="/profile">
-              <Button className="bg-hospital-500 hover:bg-hospital-600 text-white rounded-full flex items-center gap-2" size="sm">
-                {avatar ? (
+            <Link to={isAuthenticated ? "/profile" : "/auth"}>
+              <Button
+                className="bg-hospital-500 hover:bg-hospital-600 text-white rounded-full flex items-center gap-2"
+                size="sm"
+              >
+                {avatar && isAuthenticated ? (
                   <img
                     src={avatar}
                     alt="Profile"
@@ -125,7 +148,7 @@ const Navbar: React.FC = () => {
                 ) : (
                   <div className="w-5 h-5 rounded-full bg-gray-300" />
                 )}
-                Trang Cá Nhân
+                {isAuthenticated ? "Trang Cá Nhân" : "Đăng nhập"}
               </Button>
             </Link>
             <Notification />
@@ -140,7 +163,7 @@ const Navbar: React.FC = () => {
         </div>
 
         {isMenuOpen && (
-          <div className="md:hidden mt-4 bg-white/95 backdrop-blur-md rounded-xl p-4 shadow-soft animate-fade-in">
+          <div className="md:hidden mt-4 bg-white/95 backdrop-blur-md arounded-xl p-4 shadow-soft animate-fade-in">
             <nav className="flex flex-col space-y-4">
               <Link
                 to="/"
@@ -203,21 +226,39 @@ const Navbar: React.FC = () => {
                 Liên Hệ
               </Link>
               <div className="pt-2 flex flex-col gap-2">
-                <Link to="/auth" className="w-full" onClick={() => setIsMenuOpen(false)}>
-                  <Button variant="outline" className="w-full border-hospital-200 text-hospital-600 hover:bg-hospital-50">
-                    <LogIn className="mr-2 h-4 w-4" />
-                    Đăng nhập
+                {isAuthenticated ? (
+                  <Button
+                    variant="outline"
+                    className="w-full border-hospital-200 text-hospital-600 hover:bg-hospital-50"
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Đăng xuất
                   </Button>
-                </Link>
+                ) : (
+                  <Link to="/auth" className="w-full" onClick={() => setIsMenuOpen(false)}>
+                    <Button variant="outline" className="w-full border-hospital-200 text-hospital-600 hover:bg-hospital-50">
+                      <LogIn className="mr-2 h-4 w-4" />
+                      Đăng nhập
+                    </Button>
+                  </Link>
+                )}
                 <Link to="/booking" className="w-full" onClick={() => setIsMenuOpen(false)}>
                   <Button className="bg-hospital-500 hover:bg-hospital-600 text-white w-full" size="sm">
                     <Calendar className="mr-2 h-4 w-4" />
                     Đặt lịch khám
                   </Button>
                 </Link>
-                <Link to="/profile" className="w-full" onClick={() => setIsMenuOpen(false)}>
-                  <Button className="bg-hospital-500 hover:bg-hospital-600 text-white w-full flex items-center gap-2" size="sm">
-                    {avatar ? (
+                <Link
+                  to={isAuthenticated ? "/profile" : "/auth"}
+                  className="w-full"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <Button
+                    className="bg-hospital-500 hover:bg-hospital-600 text-white w-full flex items-center gap-2"
+                    size="sm"
+                  >
+                    {avatar && isAuthenticated ? (
                       <img
                         src={avatar}
                         alt="Profile"
@@ -226,7 +267,7 @@ const Navbar: React.FC = () => {
                     ) : (
                       <div className="w-5 h-5 rounded-full bg-gray-300" />
                     )}
-                    Trang Cá Nhân
+                    {isAuthenticated ? "Trang Cá Nhân" : "Đăng nhập"}
                   </Button>
                 </Link>
               </div>
